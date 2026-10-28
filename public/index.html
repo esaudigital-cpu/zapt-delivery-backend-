@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Estabelecimento - Burguer Prime</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #comanda-print, #comanda-print * { visibility: visible; }
+      #comanda-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        font-family: monospace;
+        font-size: 12px;
+        color: #000;
+        padding: 5px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- HEADER PRINCIPAL COM ABAS -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-md">
+    <!-- Identificação da Loja -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30">
+        <i class="fa-solid fa-utensils"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white flex items-center gap-2">
+          Burguer Prime Artesanal
+          <span class="bg-emerald-500/20 text-emerald-400 text-[11px] px-2.5 py-0.5 rounded-full font-semibold border border-emerald-500/30">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block mr-1 animate-pulse"></span> Aberta
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400">Painel do Parceiro Local</p>
+      </div>
+    </div>
+
+    <!-- Navegação de Abas (Cozinha vs Cardápio) -->
+    <nav class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700/80">
+      <button id="tab-orders-btn" onclick="switchTab('orders')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-md">
+        <i class="fa-solid fa-bell"></i>
+        <span>Gestor da Cozinha</span>
+        <span id="badge-orders-count" class="bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-full text-[10px] font-black ml-1">0</span>
+      </button>
+
+      <button id="tab-menu-btn" onclick="switchTab('menu')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-burger"></i>
+        <span>Meu Cardápio</span>
+      </button>
+    </nav>
+
+    <!-- Controles de Áudio, Motoboy e Tempo Real -->
+    <div class="flex items-center gap-3">
+      <a href="/motoboy" target="_blank" class="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-xs font-bold flex items-center gap-2 text-blue-400 hover:text-blue-300 transition">
+        <i class="fa-solid fa-motorcycle"></i>
+        <span>Painel do Motoboy</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+      </a>
+
+      <button id="btn-sound" onclick="toggleSound()" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-semibold flex items-center gap-2 text-slate-300 transition">
+        <i class="fa-solid fa-volume-high text-blue-400" id="sound-icon"></i>
+        <span id="sound-text">Alarme Ativo</span>
+      </button>
+
+      <div class="flex items-center gap-2 text-xs bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-700">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
+        <span class="text-slate-300">Tempo Real</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- ABA 1: GESTOR DE PEDIDOS DA COZINHA (KANBAN) -->
+  <!-- ============================================================== -->
+  <div id="view-orders" class="flex-1 flex flex-col">
+    <!-- Barra de Métricas Financeiras -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 bg-slate-950/60 border-b border-slate-800">
+      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+        <span class="text-xs text-slate-400">Faturamento Bruto</span>
+        <p class="text-xl font-black text-white mt-1" id="metric-total">R$ 0,00</p>
+      </div>
+      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+        <span class="text-xs text-slate-400">Total de Pedidos</span>
+        <p class="text-xl font-black text-blue-400 mt-1" id="metric-count">0</p>
+      </div>
+      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+        <span class="text-xs text-slate-400">Comissão App (10%)</span>
+        <p class="text-xl font-black text-amber-400 mt-1" id="metric-commission">R$ 0,00</p>
+      </div>
+      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+        <span class="text-xs text-slate-400">Líquido da Loja</span>
+        <p class="text-xl font-black text-emerald-400 mt-1" id="metric-net">R$ 0,00</p>
+      </div>
+    </section>
+
+    <!-- Quadro Kanban -->
+    <main class="flex-1 p-6 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto">
+      <!-- Coluna 1: Novos Pedidos -->
+      <div class="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/60 flex flex-col min-w-[320px]">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-700">
+          <h2 class="font-bold text-sm text-amber-400 flex items-center gap-2">
+            <i class="fa-solid fa-bell animate-bounce"></i> Novos Pedidos
+          </h2>
+          <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2 py-0.5 rounded-full" id="count-pending">0</span>
+        </div>
+        <div class="space-y-4 flex-1 overflow-y-auto" id="col-pending"></div>
+      </div>
+
+      <!-- Coluna 2: Na Cozinha -->
+      <div class="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/60 flex flex-col min-w-[320px]">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-700">
+          <h2 class="font-bold text-sm text-blue-400 flex items-center gap-2">
+            <i class="fa-solid fa-fire-burner"></i> Na Cozinha / Em Preparo
+          </h2>
+          <span class="bg-blue-500/20 text-blue-300 text-xs font-bold px-2 py-0.5 rounded-full" id="count-prep">0</span>
+        </div>
+        <div class="space-y-4 flex-1 overflow-y-auto" id="col-prep"></div>
+      </div>
+
+      <!-- Coluna 3: Em Trânsito -->
+      <div class="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/60 flex flex-col min-w-[320px]">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-700">
+          <h2 class="font-bold text-sm text-emerald-400 flex items-center gap-2">
+            <i class="fa-solid fa-motorcycle"></i> Em Trânsito / Saiu p/ Entrega
+          </h2>
+          <span class="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2 py-0.5 rounded-full" id="count-transit">0</span>
+        </div>
+        <div class="space-y-4 flex-1 overflow-y-auto" id="col-transit"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- ABA 2: GESTÃO DE CARDÁPIO (PRODUTOS, PREÇOS E PAUSAR ITENS) -->
+  <!-- ============================================================== -->
+  <div id="view-menu" class="hidden flex-1 p-6 flex flex-col max-w-7xl mx-auto w-full">
+    <!-- Barra de Ações do Cardápio -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60">
+      <div>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          Gestão de Produtos & Cardápio
+        </h2>
+        <p class="text-xs text-slate-400">Ative, pause itens esgotados ou altere preços em tempo real.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Campo de Busca no Cardápio -->
+        <div class="relative">
+          <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+          <input
+            type="text"
+            id="menu-search"
+            oninput="filterProducts()"
+            placeholder="Buscar produto..."
+            class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-48 md:w-64"
+          >
+        </div>
+
+        <!-- Botão Novo Produto -->
+        <button onclick="openProductModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/30 transition">
+          <i class="fa-solid fa-plus"></i>
+          <span>Novo Produto</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros por Categoria -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-4" id="category-filter-chips">
+      <button onclick="filterByCategory('Todas')" class="chip-cat px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white border border-blue-500" data-cat="Todas">Todas</button>
+      <button onclick="filterByCategory('Hambúrgueres')" class="chip-cat px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 hover:text-white" data-cat="Hambúrgueres">Hambúrgueres</button>
+      <button onclick="filterByCategory('Porções & Acompanhamentos')" class="chip-cat px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 hover:text-white" data-cat="Porções & Acompanhamentos">Porções & Acompanhamentos</button>
+      <button onclick="filterByCategory('Bebidas & Sobremesas')" class="chip-cat px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 hover:text-white" data-cat="Bebidas & Sobremesas">Bebidas & Sobremesas</button>
+    </div>
+
+    <!-- Grade de Produtos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto" id="products-grid">
+      <!-- Inserido dinamicamente via JS -->
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRAR / EDITAR PRODUTO -->
+  <div id="modal-product" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700">
+        <h3 class="text-base font-bold text-white" id="modal-product-title">Cadastrar Novo Produto</h3>
+        <button onclick="closeProductModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-product" onsubmit="handleSaveProduct(event)" class="space-y-4">
+        <input type="hidden" id="prod-id">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Nome do Produto *</label>
+          <input type="text" id="prod-name" required placeholder="Ex: Burger Bacon BBQ 200g" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Preço (R$) *</label>
+            <input type="number" step="0.10" id="prod-price" required placeholder="29.90" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Categoria *</label>
+            <select id="prod-category" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+              <option value="Hambúrgueres">Hambúrgueres</option>
+              <option value="Porções & Acompanhamentos">Porções & Acompanhamentos</option>
+              <option value="Bebidas & Sobremesas">Bebidas & Sobremesas</option>
+              <option value="Pizzas">Pizzas</option>
+              <option value="Sobremesas">Sobremesas</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Descrição / Ingredientes</label>
+          <textarea id="prod-description" rows="3" placeholder="Pão brioche, 2x carnes smash, queijo cheddar..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Selo de Destaque (Opcional)</label>
+            <input type="text" id="prod-badge" placeholder="Ex: O Mais Vendido" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">URL da Imagem</label>
+            <input type="url" id="prod-image" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-700">
+          <button type="button" onclick="closeProductModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-500 transition shadow-lg shadow-blue-600/30">Salvar no Cardápio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ÁREA OCULTA PARA IMPRESSÃO DE COMANDA TÉRMICA -->
+  <div id="comanda-print" class="hidden"></div>
+
+  <!-- SCRIPTS DO PAINEL -->
+  <script>
+    const API_URL = 'http://localhost:3333/api';
+    let orders = [];
+    let products = [];
+    let soundEnabled = true;
+    let currentCategoryFilter = 'Todas';
+
+    // Alternar entre Abas (Cozinha vs Cardápio)
+    function switchTab(tab) {
+      const viewOrders = document.getElementById('view-orders');
+      const viewMenu = document.getElementById('view-menu');
+      const btnOrders = document.getElementById('tab-orders-btn');
+      const btnMenu = document.getElementById('tab-menu-btn');
+
+      if (tab === 'orders') {
+        viewOrders.classList.remove('hidden');
+        viewMenu.classList.add('hidden');
+        btnOrders.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-md";
+        btnMenu.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white";
+      } else {
+        viewOrders.classList.add('hidden');
+        viewMenu.classList.remove('hidden');
+        btnMenu.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-md";
+        btnOrders.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white";
+        fetchProducts();
+      }
+    }
+
+    // ==========================================
+    // RECURSOS DO CARDÁPIO (PRODUTOS)
+    // ==========================================
+    async function fetchProducts() {
+      try {
+        const res = await fetch(`${API_URL}/merchant/products`);
+        const json = await res.json();
+        if (json.success) {
+          products = json.products;
+          renderProducts();
+        }
+      } catch (err) {
+        console.error('Erro ao buscar produtos:', err);
+      }
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('products-grid');
+      const searchQuery = (document.getElementById('menu-search').value || '').toLowerCase();
+      grid.innerHTML = '';
+
+      let list = products;
+      if (currentCategoryFilter !== 'Todas') {
+        list = list.filter(p => p.categoryName === currentCategoryFilter);
+      }
+      if (searchQuery.trim().length > 0) {
+        list = list.filter(p => p.name.toLowerCase().includes(searchQuery) || (p.description || '').toLowerCase().includes(searchQuery));
+      }
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500">
+            <i class="fa-solid fa-burger text-3xl mb-2"></i>
+            <p class="text-sm">Nenhum produto encontrado neste filtro.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(p => {
+        const card = document.createElement('div');
+        card.className = `bg-slate-800/80 rounded-2xl p-4 border ${p.isAvailable ? 'border-slate-700/80' : 'border-red-500/40 bg-red-950/10'} shadow-md flex flex-col justify-between transition hover:border-slate-600`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex gap-3 mb-3">
+              <img src="${p.imageUrl}" alt="${p.name}" class="w-16 h-16 rounded-xl object-cover border border-slate-700 ${!p.isAvailable ? 'grayscale opacity-60' : ''}">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-300">${p.categoryName}</span>
+                  ${p.badge ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">${p.badge}</span>` : ''}
+                </div>
+                <h4 class="text-sm font-bold text-white truncate mt-1 ${!p.isAvailable ? 'line-through text-slate-400' : ''}">${p.name}</h4>
+                <p class="text-xs text-slate-400 line-clamp-2 mt-0.5">${p.description || 'Sem descrição cadastrada'}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-700/60 mb-3">
+              <div>
+                <span class="text-[10px] text-slate-400">Preço Atual:</span>
+                <p class="text-base font-black text-emerald-400">R$ ${p.price.toFixed(2).replace('.', ',')}</p>
+              </div>
+              <button onclick="editProductPrice('${p.id}', ${p.price})" class="px-2.5 py-1 text-xs rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition" title="Alterar preço rápido">
+                <i class="fa-solid fa-pen-to-square mr-1"></i> Preço
+              </button>
+            </div>
+          </div>
+
+          <!-- BOTÃO INTERRUPTOR: DISPONÍVEL / PAUSADO -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-700/60 gap-2">
+            <button
+              onclick="toggleProductAvailability('${p.id}')"
+              class="flex-1 py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition ${
+                p.isAvailable
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                  : 'bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30'
+              }"
+            >
+              <i class="fa-solid ${p.isAvailable ? 'fa-toggle-on text-emerald-400 text-sm' : 'fa-toggle-off text-red-400 text-sm'}"></i>
+              <span>${p.isAvailable ? 'Item Ativo (Pausar)' : 'Pausado / Esgotado'}</span>
+            </button>
+
+            <button onclick="deleteProduct('${p.id}')" class="p-2 rounded-xl bg-slate-700 hover:bg-red-500/30 hover:text-red-400 text-slate-400 text-xs transition" title="Excluir">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function toggleProductAvailability(id) {
+      try {
+        const res = await fetch(`${API_URL}/merchant/products/${id}/toggle`, { method: 'PATCH' });
+        const json = await res.json();
+        if (json.success) {
+          const idx = products.findIndex(p => p.id === id);
+          if (idx !== -1) products[idx] = json.product;
+          renderProducts();
+        }
+      } catch (err) {
+        alert('Erro ao alterar status do produto.');
+      }
+    }
+
+    async function editProductPrice(id, currentPrice) {
+      const newPriceStr = prompt('Digite o novo preço para este produto (R$):', currentPrice.toFixed(2));
+      if (!newPriceStr) return;
+      const newPrice = parseFloat(newPriceStr.replace(',', '.'));
+      if (isNaN(newPrice) || newPrice <= 0) {
+        alert('Preço inválido.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/merchant/products/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price: newPrice })
+        });
+        const json = await res.json();
+        if (json.success) {
+          const idx = products.findIndex(p => p.id === id);
+          if (idx !== -1) products[idx] = json.product;
+          renderProducts();
+        }
+      } catch (err) {
+        alert('Erro ao atualizar preço.');
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('Deseja realmente remover este produto do cardápio?')) return;
+      try {
+        const res = await fetch(`${API_URL}/merchant/products/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          products = products.filter(p => p.id !== id);
+          renderProducts();
+        }
+      } catch (err) {
+        alert('Erro ao excluir produto.');
+      }
+    }
+
+    function filterByCategory(cat) {
+      currentCategoryFilter = cat;
+      document.querySelectorAll('.chip-cat').forEach(b => {
+        if (b.getAttribute('data-cat') === cat) {
+          b.className = "chip-cat px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white border border-blue-500";
+        } else {
+          b.className = "chip-cat px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 hover:text-white";
+        }
+      });
+      renderProducts();
+    }
+
+    function filterProducts() {
+      renderProducts();
+    }
+
+    function openProductModal() {
+      document.getElementById('modal-product').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('modal-product').classList.add('hidden');
+      document.getElementById('form-product').reset();
+    }
+
+    async function handleSaveProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('prod-name').value;
+      const price = document.getElementById('prod-price').value;
+      const categoryName = document.getElementById('prod-category').value;
+      const description = document.getElementById('prod-description').value;
+      const badge = document.getElementById('prod-badge').value;
+      const imageUrl = document.getElementById('prod-image').value;
+
+      try {
+        const res = await fetch(`${API_URL}/merchant/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, price, categoryName, description, badge, imageUrl })
+        });
+        const json = await res.json();
+        if (json.success) {
+          products.unshift(json.product);
+          closeProductModal();
+          renderProducts();
+          alert('Produto cadastrado com sucesso!');
+        }
+      } catch (err) {
+        alert('Erro ao cadastrar produto.');
+      }
+    }
+
+    // ==========================================
+    // RECURSOS DA COZINHA (PEDIDOS & KANBAN)
+    // ==========================================
+    function playDeliveryChime() {
+      if (!soundEnabled) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+      } catch (e) {
+        console.log('Áudio bloqueado até interação.');
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high text-blue-400' : 'fa-solid fa-volume-xmark text-slate-500';
+      document.getElementById('sound-text').innerText = soundEnabled ? 'Alarme Ativo' : 'Alarme Mudo';
+    }
+
+    async function fetchOrders() {
+      try {
+        const res = await fetch(`${API_URL}/merchant/orders`);
+        const json = await res.json();
+        if (json.success) {
+          orders = json.orders;
+          renderKanban();
+          updateMetrics();
+        }
+      } catch (err) {
+        console.error('Erro ao buscar pedidos:', err);
+      }
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+      try {
+        const res = await fetch(`${API_URL}/merchant/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const json = await res.json();
+        if (json.success) {
+          const idx = orders.findIndex(o => o.id === orderId || o.orderCode === orderId);
+          if (idx !== -1) orders[idx] = json.order;
+          renderKanban();
+          updateMetrics();
+        }
+      } catch (err) {
+        alert('Erro ao atualizar status do pedido.');
+      }
+    }
+
+    function printReceipt(order) {
+      const comanda = document.getElementById('comanda-print');
+      comanda.innerHTML = `
+        <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 8px;">
+          <h2 style="font-size: 16px; margin: 0;">BURGUER PRIME</h2>
+          <p style="margin: 2px 0;">Telefone: (11) 99999-1111</p>
+          <h3 style="font-size: 18px; margin: 6px 0;">PEDIDO ${order.orderCode}</h3>
+          <p style="margin: 0;">Data: ${new Date(order.createdAt).toLocaleTimeString()}</p>
+        </div>
+
+        <div style="border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
+          <p style="margin: 2px 0;"><b>Cliente:</b> ${order.customerName}</p>
+          <p style="margin: 2px 0;"><b>Telefone:</b> ${order.customerPhone}</p>
+          <p style="margin: 2px 0;"><b>Endereço:</b> ${order.address}</p>
+          ${order.notes ? `<p style="margin: 2px 0; color: #b91c1c;"><b>Obs:</b> ${order.notes}</p>` : ''}
+        </div>
+
+        <div style="border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
+          <h4 style="margin: 4px 0;">ITENS:</h4>
+          ${order.items.map(i => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span>${i.quantity}x ${i.name}</span>
+              <span>R$ ${(i.unitPrice * i.quantity).toFixed(2)}</span>
+            </div>
+            ${i.options ? `<div style="font-size: 10px; margin-left: 10px; color: #444;">• ${i.options.join(', ')}</div>` : ''}
+          `).join('')}
+        </div>
+
+        <div style="text-align: right; margin-bottom: 12px;">
+          <p style="margin: 2px 0;">Subtotal: R$ ${order.subtotal.toFixed(2)}</p>
+          <p style="margin: 2px 0;">Taxa Entrega: R$ ${order.deliveryFee.toFixed(2)}</p>
+          <h3 style="font-size: 16px; margin: 4px 0;">TOTAL: R$ ${order.total.toFixed(2)}</h3>
+          <p style="margin: 2px 0;">Pagamento: <b>${order.paymentMethod}</b></p>
+          <p style="margin: 6px 0; font-size: 14px; text-align: center;"><b>PIN DE ENTREGA: ${order.deliveryPin}</b></p>
+        </div>
+      `;
+      window.print();
+    }
+
+    function renderKanban() {
+      const colPending = document.getElementById('col-pending');
+      const colPrep = document.getElementById('col-prep');
+      const colTransit = document.getElementById('col-transit');
+
+      colPending.innerHTML = '';
+      colPrep.innerHTML = '';
+      colTransit.innerHTML = '';
+
+      let cPending = 0, cPrep = 0, cTransit = 0;
+
+      orders.forEach(order => {
+        const card = createOrderCard(order);
+
+        if (order.status === 'pending') {
+          colPending.appendChild(card);
+          cPending++;
+        } else if (order.status === 'accepted' || order.status === 'in_preparation') {
+          colPrep.appendChild(card);
+          cPrep++;
+        } else if (order.status === 'out_for_delivery') {
+          colTransit.appendChild(card);
+          cTransit++;
+        }
+      });
+
+      document.getElementById('count-pending').innerText = cPending;
+      document.getElementById('count-prep').innerText = cPrep;
+      document.getElementById('count-transit').innerText = cTransit;
+      document.getElementById('badge-orders-count').innerText = cPending;
+    }
+
+    function createOrderCard(order) {
+      const div = document.createElement('div');
+      div.className = "bg-slate-900 rounded-xl p-4 border border-slate-700 shadow-lg transition hover:border-slate-600";
+
+      const itemsHtml = order.items.map(item => `
+        <div class="flex justify-between items-start text-xs text-slate-300 py-1 border-b border-slate-800">
+          <div>
+            <span class="font-bold text-white">${item.quantity}x</span> ${item.name}
+            ${item.options ? `<div class="text-[11px] text-blue-400 ml-4">• ${item.options.join(', ')}</div>` : ''}
+            ${item.notes ? `<div class="text-[11px] text-amber-300 ml-4 italic">Obs: "${item.notes}"</div>` : ''}
+          </div>
+          <span class="font-semibold text-slate-300">R$ ${(item.unitPrice * item.quantity).toFixed(2)}</span>
+        </div>
+      `).join('');
+
+      div.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-xs font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">${order.orderCode}</span>
+            <span class="text-xs text-slate-400 ml-2">${new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          </div>
+          <span class="text-xs font-bold ${order.paymentMethod === 'PIX' ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'} px-2 py-0.5 rounded border">
+            ${order.paymentMethod}
+          </span>
+        </div>
+
+        <div class="mb-3">
+          <p class="text-sm font-bold text-white">${order.customerName}</p>
+          <p class="text-xs text-slate-400 truncate"><i class="fa-solid fa-location-dot text-slate-500 mr-1"></i>${order.address}</p>
+        </div>
+
+        <div class="bg-slate-950/60 rounded-lg p-2.5 mb-3 border border-slate-800">
+          ${itemsHtml}
+          <div class="flex justify-between text-xs font-bold text-white pt-2 mt-1">
+            <span>Total com frete</span>
+            <span class="text-emerald-400 text-sm">R$ ${order.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <button onclick='printReceipt(${JSON.stringify(order)})' class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 text-xs transition" title="Imprimir Comanda">
+            <i class="fa-solid fa-print"></i>
+          </button>
+
+          ${order.status === 'pending' ? `
+            <button onclick="updateOrderStatus('${order.id}', 'in_preparation')" class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
+              <i class="fa-solid fa-fire"></i> Aceitar (30 min)
+            </button>
+          ` : order.status === 'in_preparation' || order.status === 'accepted' ? `
+            <button onclick="updateOrderStatus('${order.id}', 'out_for_delivery')" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/30">
+              <i class="fa-solid fa-motorcycle"></i> Despachar Motoboy
+            </button>
+          ` : `
+            <button onclick="updateOrderStatus('${order.id}', 'delivered')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30">
+              <i class="fa-solid fa-check"></i> Concluir Entrega
+            </button>
+          `}
+        </div>
+      `;
+      return div;
+    }
+
+    function updateMetrics() {
+      const total = orders.reduce((acc, o) => acc + o.total, 0);
+      const commission = orders.reduce((acc, o) => acc + o.platformCommission, 0);
+      const net = orders.reduce((acc, o) => acc + o.merchantNetAmount, 0);
+
+      document.getElementById('metric-total').innerText = `R$ ${total.toFixed(2)}`;
+      document.getElementById('metric-count').innerText = orders.length;
+      document.getElementById('metric-commission').innerText = `R$ ${commission.toFixed(2)}`;
+      document.getElementById('metric-net').innerText = `R$ ${net.toFixed(2)}`;
+    }
+
+    function connectRealtime() {
+      const evtSource = new EventSource(`${API_URL}/realtime`);
+
+      evtSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'NEW_ORDER') {
+          orders.unshift(data.order);
+          renderKanban();
+          updateMetrics();
+          playDeliveryChime();
+        } else if (data.type === 'STATUS_CHANGE') {
+          const idx = orders.findIndex(o => o.id === data.order.id || o.orderCode === data.order.orderCode);
+          if (idx !== -1) orders[idx] = data.order;
+          renderKanban();
+          updateMetrics();
+        }
+      };
+
+      evtSource.onerror = () => {
+        console.log('Reconectando tempo real...');
+      };
+    }
+
+    // Inicialização
+    fetchOrders();
+    connectRealtime();
+  </script>
+</body>
+</html>
