@@ -182,7 +182,7 @@ app.get('/api/neighborhoods', (req, res) => {
 });
 
 app.post('/api/orders', (req, res) => {
-  const { store, items, subtotal, deliveryFee, total, paymentMethod, address, notes } = req.body;
+  const { store, items, subtotal, deliveryFee, total, paymentMethod, address, notes, customerName, customerPhone } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ error: 'A sacola não pode estar vazia.' });
@@ -201,8 +201,8 @@ app.post('/api/orders', (req, res) => {
     orderCode,
     storeId: store?.id || 'store_1',
     storeName: store?.name || 'Burguer Prime Artesanal',
-    customerName: 'Cliente App',
-    customerPhone: '5511999990000',
+    customerName: customerName || 'Esaú Monteiro',
+    customerPhone: customerPhone || '5511988887777',
     address: address || 'Rua das Flores, 142 - Centro',
     status: 'pending',
     items: items || [],
