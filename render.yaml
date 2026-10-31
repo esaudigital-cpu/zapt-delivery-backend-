@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: delivery-backend
+    name: zapt-delivery-backend
     env: node
     plan: free
     buildCommand: npm install
