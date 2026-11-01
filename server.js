@@ -25,10 +25,15 @@ const categories = [
 ];
 
 const neighborhoods = [
-  { id: 'bairro_1', name: 'Centro', baseDeliveryFee: 3.50, estimatedTimeMin: 25 },
-  { id: 'bairro_2', name: 'Jardim América', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
-  { id: 'bairro_3', name: 'Vila Nova', baseDeliveryFee: 6.00, estimatedTimeMin: 35 },
-  { id: 'bairro_4', name: 'Bairro Industrial', baseDeliveryFee: 7.50, estimatedTimeMin: 40 },
+  { id: 'bairro_1', city: 'Barbalha', name: 'Centro (Barbalha)', baseDeliveryFee: 3.50, estimatedTimeMin: 20 },
+  { id: 'bairro_2', city: 'Barbalha', name: 'Santo Antônio', baseDeliveryFee: 4.00, estimatedTimeMin: 25 },
+  { id: 'bairro_3', city: 'Barbalha', name: 'Cirolândia', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
+  { id: 'bairro_4', city: 'Barbalha', name: 'Bela Vista / Malvinas', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
+  { id: 'bairro_5', city: 'Barbalha', name: 'Rosário', baseDeliveryFee: 4.50, estimatedTimeMin: 25 },
+  { id: 'bairro_6', city: 'Barbalha', name: 'Alto da Alegria', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
+  { id: 'bairro_7', city: 'Barbalha', name: 'Bulandeira', baseDeliveryFee: 6.00, estimatedTimeMin: 35 },
+  { id: 'bairro_8', city: 'Barbalha', name: 'Distrito de Caldas', baseDeliveryFee: 10.00, estimatedTimeMin: 45 },
+  { id: 'bairro_9', city: 'Barbalha', name: 'Arajara', baseDeliveryFee: 12.00, estimatedTimeMin: 50 },
 ];
 
 let products = [
