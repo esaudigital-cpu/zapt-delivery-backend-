@@ -241,32 +241,138 @@ app.get('/api/orders/:id', (req, res) => {
 });
 
 // ====================================================================
-// GATEWAY DE PAGAMENTO PIX AUTOMÁTICO (MERCADO PAGO + SANDBOX)
+// GATEWAY DE PAGAMENTO PIX AUTOMÁTICO (ASAAS + MERCADO PAGO + SIMULADOR)
 // ====================================================================
 const pixPayments = new Map();
+let asaasDefaultCustomerId = null;
 
-// Endpoint para verificar status do Gateway (Live ou Sandbox)
+// Endpoint para verificar status do Gateway (Asaas, Mercado Pago ou Simulador)
 app.get('/api/pix/config', (req, res) => {
-  const isLive = Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN);
+  const hasAsaas = Boolean(process.env.ASAAS_API_KEY);
+  const hasMP = Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN);
+
+  let provider = 'Simulador Inteligente (Modo Teste)';
+  if (hasAsaas) provider = 'Asaas (Transferência Livre para Caixa/Next)';
+  else if (hasMP) provider = 'Mercado Pago';
+
   res.json({
     success: true,
-    provider: 'Mercado Pago',
-    mode: isLive ? 'production' : 'sandbox_simulator',
-    hasToken: isLive,
+    provider,
+    mode: (hasAsaas || hasMP) ? 'production' : 'sandbox_simulator',
+    hasAsaas,
+    hasMP,
   });
 });
 
 // Criar cobrança PIX dinâmica
 app.post('/api/pix/create-payment', async (req, res) => {
   try {
-    const { orderId, amount, customerName, customerEmail, description } = req.body;
+    const { orderId, amount, customerName, customerEmail, customerPhone, description } = req.body;
     const order = orders.find((o) => o.id === orderId || o.orderCode === orderId);
 
     const targetAmount = Number(amount || order?.total || 10.00);
+    const asaasKey = process.env.ASAAS_API_KEY;
     const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
+    // -------------------------------------------------------------
+    // OPÇÃO 1: ASAAS (Preferencial - Sem dívidas e transfere p/ Caixa)
+    // -------------------------------------------------------------
+    if (asaasKey) {
+      const asaasUrl = asaasKey.includes('sandbox') ? 'https://api-sandbox.asaas.com/v3' : 'https://api.asaas.com/v3';
+
+      // 1.1 Criar ou reutilizar cliente no Asaas
+      let customerId = asaasDefaultCustomerId;
+      if (!customerId) {
+        try {
+          const custRes = await fetch(`${asaasUrl}/customers`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'access_token': asaasKey,
+            },
+            body: JSON.stringify({
+              name: customerName || order?.customerName || 'Cliente Zapt Delivery',
+              mobilePhone: (customerPhone || order?.customerPhone || '11999999999').replace(/\D/g, ''),
+              notificationDisabled: true,
+            })
+          });
+          const custData = await custRes.json();
+          if (custData && custData.id) {
+            customerId = custData.id;
+            asaasDefaultCustomerId = customerId;
+          }
+        } catch (e) {
+          console.warn('[ASAAS CUSTOMER ERR]', e.message);
+        }
+      }
+
+      // 1.2 Criar cobrança PIX no Asaas
+      const today = new Date().toISOString().split('T')[0];
+      const asaasPayRes = await fetch(`${asaasUrl}/payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': asaasKey,
+        },
+        body: JSON.stringify({
+          customer: customerId || 'cus_000000000000',
+          billingType: 'PIX',
+          value: targetAmount,
+          dueDate: today,
+          description: description || `Pedido ${order?.orderCode || ''} - Zapt Delivery`,
+          externalReference: order?.id || orderId || `ref_${Date.now()}`,
+          postalService: false,
+        })
+      });
+
+      const asaasPayData = await asaasPayRes.json();
+
+      if (asaasPayData && asaasPayData.id) {
+        const paymentId = asaasPayData.id;
+
+        // 1.3 Obter QR Code e Copia e Cola
+        const qrRes = await fetch(`${asaasUrl}/payments/${paymentId}/pixQrCode`, {
+          headers: { 'access_token': asaasKey }
+        });
+        const qrData = await qrRes.json();
+
+        const qrCode = qrData.payload;
+        const qrCodeBase64 = qrData.encodedImage ? `data:image/png;base64,${qrData.encodedImage}` : null;
+
+        pixPayments.set(paymentId, {
+          paymentId,
+          orderId: order?.id || orderId,
+          orderCode: order?.orderCode,
+          amount: targetAmount,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          provider: 'asaas',
+        });
+
+        if (order) {
+          order.paymentId = paymentId;
+        }
+
+        console.log(`[PIX ASAAS CRIADO] ID: ${paymentId} | Valor: R$ ${targetAmount} | Pedido: ${order?.orderCode}`);
+
+        return res.json({
+          success: true,
+          provider: 'asaas',
+          mode: 'production',
+          paymentId,
+          qrCode,
+          qrCodeBase64,
+          amount: targetAmount,
+        });
+      } else {
+        console.error('[ERRO ASAAS API]', asaasPayData);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // OPÇÃO 2: MERCADO PAGO (Fallback)
+    // -------------------------------------------------------------
     if (mpToken) {
-      // Modo Mercado Pago Oficial (Produção / Teste Real)
       const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
         method: 'POST',
         headers: {
@@ -326,7 +432,9 @@ app.post('/api/pix/create-payment', async (req, res) => {
       }
     }
 
-    // Modo Simulador Inteligente (Quando ainda não foi configurado o token no Render)
+    // -------------------------------------------------------------
+    // OPÇÃO 3: MODO SIMULADOR INTELIGENTE (Permite testar tudo de graça sem cadastro)
+    // -------------------------------------------------------------
     const simulatedPaymentId = `pix_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
     const pixKey = 'pix@zaptdelivery.com.br';
     const fakeEMV = `00020126580014br.gov.bcb.pix0136${pixKey}520400005303986540${targetAmount.toFixed(2)}5802BR5915ZAPT DELIVERY6009SAO PAULO62070503${simulatedPaymentId.slice(-4)}6304`;
@@ -346,7 +454,7 @@ app.post('/api/pix/create-payment', async (req, res) => {
       order.paymentId = simulatedPaymentId;
     }
 
-    console.log(`[PIX SANDBOX CRIADO] ID: ${simulatedPaymentId} | Valor: R$ ${targetAmount} | Pedido: ${order?.orderCode}`);
+    console.log(`[PIX SIMULADOR CRIADO] ID: ${simulatedPaymentId} | Valor: R$ ${targetAmount} | Pedido: ${order?.orderCode}`);
 
     return res.json({
       success: true,
@@ -366,11 +474,46 @@ app.post('/api/pix/create-payment', async (req, res) => {
 // Consultar status do pagamento PIX (Polling pelo App)
 app.get('/api/pix/status/:paymentId', async (req, res) => {
   const { paymentId } = req.params;
+  const asaasKey = process.env.ASAAS_API_KEY;
   const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
   let paymentRecord = pixPayments.get(paymentId);
 
-  // Se for Mercado Pago e tiver token, checar status na API do Mercado Pago
+  // Consulta Asaas
+  if (asaasKey && (!paymentRecord || paymentRecord.status !== 'approved')) {
+    try {
+      const asaasUrl = asaasKey.includes('sandbox') ? 'https://api-sandbox.asaas.com/v3' : 'https://api.asaas.com/v3';
+      const asaasRes = await fetch(`${asaasUrl}/payments/${paymentId}`, {
+        headers: { 'access_token': asaasKey },
+      });
+      if (asaasRes.ok) {
+        const asaasData = await asaasRes.json();
+        if (asaasData.status === 'RECEIVED' || asaasData.status === 'CONFIRMED') {
+          if (!paymentRecord) {
+            paymentRecord = { paymentId, status: 'approved' };
+            pixPayments.set(paymentId, paymentRecord);
+          } else {
+            paymentRecord.status = 'approved';
+          }
+
+          const order = orders.find(
+            (o) => o.paymentId === paymentId || o.id === asaasData.externalReference
+          );
+          if (order && order.paymentStatus !== 'paid') {
+            order.paymentStatus = 'paid';
+            order.status = 'in_preparation';
+            order.paidAt = new Date().toISOString();
+            notifyAll('STATUS_CHANGE', order);
+            console.log(`[PIX APROVADO ASAAS] Pedido ${order.orderCode} pago via Asaas!`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao consultar Asaas:', e.message);
+    }
+  }
+
+  // Consulta Mercado Pago
   if (mpToken && (!paymentRecord || paymentRecord.status !== 'approved')) {
     try {
       const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
@@ -386,7 +529,6 @@ app.get('/api/pix/status/:paymentId', async (req, res) => {
             paymentRecord.status = 'approved';
           }
 
-          // Atualizar o pedido correspondente
           const order = orders.find(
             (o) => o.paymentId === paymentId || o.id === mpData.external_reference
           );
@@ -455,6 +597,41 @@ app.post('/api/pix/simulate-approval/:paymentId', (req, res) => {
     paymentId,
     order,
   });
+});
+
+// Webhook Oficial do Asaas
+app.post('/api/webhooks/asaas', async (req, res) => {
+  try {
+    const { event, payment } = req.body || {};
+    console.log(`[WEBHOOK ASAAS RECEBIDO] Evento: ${event} | ID: ${payment?.id}`);
+
+    if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
+      const paymentId = payment?.id;
+      const externalRef = payment?.externalReference;
+
+      let paymentRecord = pixPayments.get(paymentId);
+      if (paymentRecord) {
+        paymentRecord.status = 'approved';
+      }
+
+      const order = orders.find(
+        (o) => o.paymentId === paymentId || o.id === externalRef || o.orderCode === externalRef
+      );
+
+      if (order && order.paymentStatus !== 'paid') {
+        order.paymentStatus = 'paid';
+        order.status = 'in_preparation';
+        order.paidAt = new Date().toISOString();
+        notifyAll('STATUS_CHANGE', order);
+        console.log(`[WEBHOOK ASAAS PIX APROVADO] Pedido ${order.orderCode} aprovado na cozinha!`);
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error('[ERRO WEBHOOK ASAAS]', err);
+    res.status(200).json({ received: true });
+  }
 });
 
 // Webhook Oficial do Mercado Pago
