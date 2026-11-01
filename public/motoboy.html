@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>App do Entregador • Delivery</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.5; }
+      100% { transform: scale(0.95); opacity: 1; }
+    }
+    .pulse-radar {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+    .pin-input {
+      letter-spacing: 0.5em;
+      text-align: center;
+      font-size: 1.8rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-24 select-none">
+
+  <!-- BARRA DE STATUS SUPERIOR (IDENTIDADE AZUL ELÉTRICO) -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-4 py-3 shadow-lg">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      
+      <!-- Dados do Motoboy -->
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <div class="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md border-2 border-blue-400">
+            <i class="fa-solid fa-motorcycle"></i>
+          </div>
+          <span id="status-dot" class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 shadow"></span>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-sm font-bold text-white tracking-wide" id="driver-name">Carlos Motoboy</h1>
+            <span class="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.2 rounded font-semibold">PRO</span>
+          </div>
+          <p class="text-[11px] text-slate-400" id="driver-vehicle">Honda Fan 160 • BRA-3E19</p>
+        </div>
+      </div>
+
+      <!-- Interruptor Online / Offline -->
+      <button onclick="toggleOnline()" id="btn-toggle-online" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-sm shadow-emerald-500/20 active:scale-95">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="text-toggle-online">ONLINE</span>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL (MOBILE FIRST) -->
+  <main class="max-w-md mx-auto w-full px-4 pt-4 flex-1">
+
+    <!-- CARTEIRA DIGITAL RÁPIDA (GANHOS DO DIA) -->
+    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 rounded-2xl p-4 border border-blue-900/40 shadow-xl mb-4 relative overflow-hidden">
+      <div class="absolute -right-4 -bottom-4 text-blue-500/10 text-8xl pointer-events-none">
+        <i class="fa-solid fa-wallet"></i>
+      </div>
+
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-coins text-amber-400"></i> Saldo Disponível Hoje
+          </span>
+          <div class="flex items-baseline gap-1 mt-0.5">
+            <span class="text-xs text-slate-300 font-medium">R$</span>
+            <span class="text-2xl font-black text-white" id="wallet-balance">38,50</span>
+          </div>
+        </div>
+
+        <button onclick="openWithdrawModal()" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-600/30 active:scale-95">
+          <i class="fa-brands fa-pix text-emerald-300"></i> Sacar PIX
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs">
+        <div class="bg-slate-950/60 rounded-xl p-2 border border-slate-800 flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Entregas</span>
+            <span class="font-bold text-white text-xs" id="wallet-deliveries">7 feitas</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-950/60 rounded-xl p-2 border border-slate-800 flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Total do Dia</span>
+            <span class="font-bold text-white text-xs" id="wallet-total-day">R$ 38,50</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÁREA 1: CORRIDA EM ANDAMENTO (QUANDO O MOTOBOY ACEITOU UM PEDIDO) -->
+    <section id="section-active-delivery" class="hidden mb-6">
+      <div class="bg-slate-900 border-2 border-blue-500 rounded-2xl p-4 shadow-2xl shadow-blue-500/10 relative">
+        
+        <!-- Header da Corrida Ativa -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500 animate-ping"></span>
+            <span class="text-xs font-black uppercase text-blue-400 tracking-wider">Corrida em Andamento</span>
+          </div>
+          <span class="text-xs font-mono font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30" id="active-order-code">#1001</span>
+        </div>
+
+        <!-- Rota Ponto A -> Ponto B -->
+        <div class="space-y-3 mb-4">
+          <!-- Ponto A: Restaurante (Coleta) -->
+          <div class="flex items-start gap-3 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+            <div class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-store text-xs"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-amber-400">1. Coleta no Restaurante</span>
+                <a id="btn-route-pickup" target="_blank" class="text-[11px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                  <i class="fa-solid fa-diamond-turn-right"></i> Rota GPS
+                </a>
+              </div>
+              <p class="text-xs font-bold text-white truncate" id="active-store-name">Burguer Prime Artesanal</p>
+              <p class="text-[11px] text-slate-400 truncate" id="active-store-address">Av. Paulista, 1000 - Centro</p>
+            </div>
+          </div>
+
+          <!-- Ponto B: Cliente (Entrega) -->
+          <div class="flex items-start gap-3 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+            <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-location-dot text-xs"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-emerald-400">2. Entrega ao Cliente</span>
+                <div class="flex items-center gap-2">
+                  <a id="btn-route-delivery" target="_blank" class="text-[11px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                    <i class="fa-solid fa-diamond-turn-right"></i> Rota GPS
+                  </a>
+                  <a id="btn-whatsapp-customer" target="_blank" class="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                    <i class="fa-brands fa-whatsapp"></i> Zap
+                  </a>
+                </div>
+              </div>
+              <p class="text-xs font-bold text-white truncate" id="active-customer-name">Lucas Silva</p>
+              <p class="text-[11px] text-slate-300 font-semibold" id="active-delivery-address">Rua das Flores, 142 - Centro</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forma de Cobrança / Pagamento -->
+        <div id="payment-badge-container" class="mb-4">
+          <!-- Injetado dinamicamente via JS (Já Pago vs Cobrar Dinheiro) -->
+        </div>
+
+        <!-- Sua Taxa de Entrega -->
+        <div class="flex items-center justify-between bg-blue-600/10 border border-blue-500/30 rounded-xl p-3 mb-4">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-sack-dollar text-blue-400 text-lg"></i>
+            <div>
+              <span class="text-[10px] text-slate-400 block font-semibold">SEUS GANHOS NESTA CORRIDA</span>
+              <span class="text-xs font-bold text-white">Taxa Integral de Entrega</span>
+            </div>
+          </div>
+          <span class="text-base font-black text-emerald-400" id="active-delivery-fee">+ R$ 5,00</span>
+        </div>
+
+        <!-- ÁREA DE CONFIRMAÇÃO COM O PIN DE 4 DÍGITOS -->
+        <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 text-center">
+          <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-300 mb-1">
+            <i class="fa-solid fa-shield-halved text-blue-400"></i>
+            <span>Validação de Entrega Segura</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-3">
+            Peça ao cliente o <strong class="text-white">PIN de 4 dígitos</strong> exibido no app dele:
+          </p>
+
+          <form onsubmit="handleDeliverOrder(event)" class="space-y-3">
+            <div class="flex justify-center">
+              <input
+                type="text"
+                id="input-pin"
+                maxlength="4"
+                pattern="[0-9]*"
+                inputmode="numeric"
+                required
+                placeholder="• • • •"
+                class="pin-input w-48 bg-slate-900 border-2 border-slate-700 focus:border-blue-500 rounded-xl py-2 px-3 text-white font-mono font-bold tracking-widest text-center shadow-inner focus:outline-none transition"
+              >
+            </div>
+
+            <div id="pin-error-msg" class="hidden text-xs text-red-400 font-semibold"></div>
+
+            <button
+              type="submit"
+              id="btn-confirm-delivery"
+              class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95"
+            >
+              <i class="fa-solid fa-circle-check text-sm"></i> Confirmar Entrega e Receber
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ÁREA 2: RADAR DE CHAMADAS DISPONÍVEIS (SE NÃO HOUVER CORRIDA ATIVA) -->
+    <section id="section-available-orders">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-blue-500 pulse-radar"></div>
+          <h2 class="text-xs font-bold text-white uppercase tracking-wider">Radar de Corridas</h2>
+        </div>
+        <span class="text-[11px] text-slate-400" id="available-count">0 disponíveis</span>
+      </div>
+
+      <!-- Container das Corridas -->
+      <div id="available-orders-list" class="space-y-3">
+        <!-- Renderizado dinamicamente -->
+      </div>
+
+      <!-- Empty State quando não há corridas no momento -->
+      <div id="empty-available" class="bg-slate-900/60 rounded-2xl p-8 border border-slate-800 text-center my-4">
+        <div class="w-16 h-16 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3 text-2xl pulse-radar">
+          <i class="fa-solid fa-satellite-dish"></i>
+        </div>
+        <h3 class="text-sm font-bold text-white mb-1">Procurando Corridas Próximas...</h3>
+        <p class="text-xs text-slate-400 max-w-xs mx-auto">
+          Mantenha a tela ligada. Assim que a cozinha despachar um pedido, você ouvirá um aviso sonoro imediato!
+        </p>
+      </div>
+    </section>
+
+    <!-- ÁREA 3: HISTÓRICO DE ENTREGAS CONCLUÍDAS DO DIA -->
+    <section class="mt-6 mb-4">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> Histórico Recente de Hoje
+      </h3>
+
+      <div id="delivery-history-list" class="space-y-2">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE SAQUE VIA PIX -->
+  <div id="modal-withdraw" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-800 mb-3">
+        <div class="flex items-center gap-2 text-white font-bold text-sm">
+          <i class="fa-brands fa-pix text-emerald-400"></i>
+          <span>Solicitar Saque PIX</span>
+        </div>
+        <button onclick="closeWithdrawModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4 text-center">
+        <span class="text-[11px] text-slate-400 block">Valor a transferir</span>
+        <span class="text-2xl font-black text-emerald-400" id="withdraw-amount-display">R$ 0,00</span>
+      </div>
+
+      <form onsubmit="handleWithdraw(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Tipo de Chave PIX</label>
+          <select id="withdraw-key-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+            <option value="CPF">CPF</option>
+            <option value="Celular">Celular</option>
+            <option value="E-mail">E-mail</option>
+            <option value="Chave Aleatória">Chave Aleatória (EVP)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Chave PIX *</label>
+          <input type="text" id="withdraw-key-input" required placeholder="Digite sua chave PIX..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Confirmar Transferência
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
+  <nav class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 py-2.5 px-6 z-30">
+    <div class="max-w-md mx-auto flex items-center justify-around text-xs">
+      <button class="flex flex-col items-center gap-1 text-blue-500 font-bold">
+        <i class="fa-solid fa-motorcycle text-lg"></i>
+        <span>Corridas</span>
+      </button>
+      <a href="/painel" target="_blank" class="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-kitchen-set text-lg"></i>
+        <span>Cozinha</span>
+      </a>
+      <button onclick="toggleAudio()" id="btn-audio-toggle" class="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-volume-high text-lg" id="icon-audio"></i>
+        <span id="text-audio">Som Ativo</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- LÓGICA DO APLICATIVO DO MOTOBOY -->
+  <script>
+    const API_BASE = window.location.origin;
+    let driverData = null;
+    let activeOrder = null;
+    let availableOrders = [];
+    let audioAlerts = true;
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDriverProfile();
+      loadAvailableOrders();
+      connectRealtime();
+    });
+
+    // =======================================================
+    // ÁUDIO DE ALERTA DE NOVA CORRIDA (Web Audio API)
+    // =======================================================
+    function playNewRaceAlert() {
+      if (!audioAlerts) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Buzina de moto / bip duplo característico de delivery
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc1.frequency.setValueAtTime(554, audioCtx.currentTime + 0.15);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(1108, audioCtx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start();
+        osc2.start();
+        osc1.stop(audioCtx.currentTime + 0.5);
+        osc2.stop(audioCtx.currentTime + 0.5);
+      } catch (err) {
+        console.log('Interação prévia necessária para tocar áudio.');
+      }
+    }
+
+    function toggleAudio() {
+      audioAlerts = !audioAlerts;
+      document.getElementById('icon-audio').className = audioAlerts ? 'fa-solid fa-volume-high text-lg text-blue-400' : 'fa-solid fa-volume-xmark text-lg text-slate-500';
+      document.getElementById('text-audio').innerText = audioAlerts ? 'Som Ativo' : 'Som Mudo';
+    }
+
+    // =======================================================
+    // COMUNICAÇÃO COM O SERVIDOR (API)
+    // =======================================================
+    async function loadDriverProfile() {
+      try {
+        const res = await fetch(`${API_BASE}/api/driver/me`);
+        const json = await res.json();
+        if (json.success) {
+          driverData = json.driver;
+          activeOrder = json.activeOrder;
+          renderHeaderAndWallet();
+          renderActiveDelivery();
+          renderHistory();
+        }
+      } catch (e) {
+        console.error('Erro ao carregar dados do entregador:', e);
+      }
+    }
+
+    async function loadAvailableOrders() {
+      try {
+        const res = await fetch(`${API_BASE}/api/driver/orders/available`);
+        const json = await res.json();
+        if (json.success) {
+          availableOrders = json.orders;
+          renderAvailableOrders();
+        }
+      } catch (e) {
+        console.error('Erro ao buscar corridas disponíveis:', e);
+      }
+    }
+
+    async function toggleOnline() {
+      try {
+        const res = await fetch(`${API_BASE}/api/driver/toggle-online`, { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          driverData.isOnline = json.isOnline;
+          renderHeaderAndWallet();
+        }
+      } catch (e) {
+        alert('Erro ao alterar status online.');
+      }
+    }
+
+    async function acceptOrder(orderId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/driver/orders/${orderId}/accept`, { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          activeOrder = json.order;
+          renderActiveDelivery();
+          loadAvailableOrders();
+          playNewRaceAlert();
+        } else {
+          alert(json.error || 'Não foi possível aceitar a corrida.');
+        }
+      } catch (e) {
+        alert('Erro ao aceitar corrida.');
+      }
+    }
+
+    async function handleDeliverOrder(event) {
+      event.preventDefault();
+      const pin = document.getElementById('input-pin').value.trim();
+      const errorMsg = document.getElementById('pin-error-msg');
+      const btn = document.getElementById('btn-confirm-delivery');
+
+      if (!pin || pin.length !== 4) {
+        errorMsg.innerText = 'Digite o PIN de 4 dígitos completo.';
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validando PIN...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/driver/orders/${activeOrder.id}/deliver`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin }),
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          errorMsg.classList.add('hidden');
+          alert(`🎉 SUCESSO!\n\n${json.message}`);
+          activeOrder = null;
+          driverData.wallet = json.wallet;
+          renderActiveDelivery();
+          renderHeaderAndWallet();
+          renderHistory();
+          loadAvailableOrders();
+        } else {
+          errorMsg.innerText = json.error || 'PIN incorreto. Tente novamente.';
+          errorMsg.classList.remove('hidden');
+        }
+      } catch (e) {
+        errorMsg.innerText = 'Erro na validação da entrega.';
+        errorMsg.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check text-sm"></i> Confirmar Entrega e Receber';
+      }
+    }
+
+    // =======================================================
+    // RENDERIZAÇÃO DA INTERFACE
+    // =======================================================
+    function renderHeaderAndWallet() {
+      if (!driverData) return;
+      document.getElementById('driver-name').innerText = driverData.name;
+      document.getElementById('driver-vehicle').innerText = `${driverData.vehicle} • ${driverData.plate}`;
+
+      // Status Online / Offline
+      const isOnline = driverData.isOnline;
+      const statusDot = document.getElementById('status-dot');
+      const btnToggle = document.getElementById('btn-toggle-online');
+      const textToggle = document.getElementById('text-toggle-online');
+
+      if (isOnline) {
+        statusDot.className = 'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 shadow';
+        btnToggle.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-sm shadow-emerald-500/20 active:scale-95';
+        textToggle.innerText = 'ONLINE';
+      } else {
+        statusDot.className = 'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-slate-500 rounded-full border-2 border-slate-900 shadow';
+        btnToggle.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition border border-slate-700 bg-slate-800 text-slate-400 active:scale-95';
+        textToggle.innerText = 'OFFLINE';
+      }
+
+      // Carteira
+      document.getElementById('wallet-balance').innerText = driverData.wallet.balance.toFixed(2).replace('.', ',');
+      document.getElementById('wallet-deliveries').innerText = `${driverData.wallet.todayDeliveries} feitas`;
+      document.getElementById('wallet-total-day').innerText = `R$ ${driverData.wallet.totalEarnedToday.toFixed(2).replace('.', ',')}`;
+    }
+
+    function renderActiveDelivery() {
+      const section = document.getElementById('section-active-delivery');
+      if (!activeOrder) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      document.getElementById('active-order-code').innerText = activeOrder.orderCode;
+      document.getElementById('active-store-name').innerText = activeOrder.storeName || 'Burguer Prime Artesanal';
+      document.getElementById('active-customer-name').innerText = activeOrder.customerName || 'Cliente App';
+      document.getElementById('active-delivery-address').innerText = activeOrder.address;
+      document.getElementById('active-delivery-fee').innerText = `+ R$ ${(activeOrder.deliveryFee || 5.00).toFixed(2).replace('.', ',')}`;
+
+      // Links de GPS
+      const pickupAddressEncoded = encodeURIComponent(activeOrder.storeName + ' Centro');
+      const deliveryAddressEncoded = encodeURIComponent(activeOrder.address);
+      document.getElementById('btn-route-pickup').href = `https://www.google.com/maps/dir/?api=1&destination=${pickupAddressEncoded}`;
+      document.getElementById('btn-route-delivery').href = `https://www.google.com/maps/dir/?api=1&destination=${deliveryAddressEncoded}`;
+
+      // WhatsApp do Cliente
+      const phone = activeOrder.customerPhone || '5511999990000';
+      const zapMsg = encodeURIComponent(`Olá ${activeOrder.customerName}! Sou seu entregador do pedido ${activeOrder.orderCode}. Já estou a caminho do seu endereço!`);
+      document.getElementById('btn-whatsapp-customer').href = `https://wa.me/${phone}?text=${zapMsg}`;
+
+      // Badge de Pagamento
+      const badgeContainer = document.getElementById('payment-badge-container');
+      if (activeOrder.paymentMethod === 'PIX' || activeOrder.paymentMethod === 'cartao') {
+        badgeContainer.innerHTML = `
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex items-center gap-2.5">
+            <i class="fa-solid fa-shield-check text-emerald-400 text-lg"></i>
+            <div>
+              <span class="text-xs font-bold text-emerald-400 block">JÁ PAGO NO APLICATIVO</span>
+              <span class="text-[11px] text-slate-300">Não cobrar nenhum valor do cliente na entrega.</span>
+            </div>
+          </div>
+        `;
+      } else {
+        badgeContainer.innerHTML = `
+          <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-2.5">
+            <i class="fa-solid fa-hand-holding-dollar text-amber-400 text-lg"></i>
+            <div>
+              <span class="text-xs font-bold text-amber-400 block">RECEBER EM DINHEIRO: R$ ${activeOrder.total.toFixed(2).replace('.', ',')}</span>
+              <span class="text-[11px] text-slate-300">Cobrar do cliente no ato da entrega.</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // Limpar campo de PIN
+      document.getElementById('input-pin').value = '';
+      document.getElementById('pin-error-msg').classList.add('hidden');
+    }
+
+    function renderAvailableOrders() {
+      const container = document.getElementById('available-orders-list');
+      const emptyState = document.getElementById('empty-available');
+      const countLabel = document.getElementById('available-count');
+
+      // Filtrar corridas que não estão com motoboy
+      const list = availableOrders.filter(o => !o.driverId && o.status !== 'delivered');
+      countLabel.innerText = `${list.length} disponíveis`;
+
+      if (list.length === 0 || activeOrder) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      container.innerHTML = '';
+
+      list.forEach(order => {
+        const fee = order.deliveryFee || 5.00;
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-4 shadow-lg transition";
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="text-xs font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">${order.orderCode}</span>
+              <span class="text-xs font-bold text-white ml-2">${order.storeName || 'Loja Parceira'}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block text-[10px]">Sua Taxa</span>
+              <span class="text-sm font-black text-emerald-400">+ R$ ${fee.toFixed(2).replace('.', ',')}</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 mb-3 space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-300">
+              <i class="fa-solid fa-store text-amber-400 text-xs"></i>
+              <span class="truncate">Coleta: <b>${order.storeName || 'Burguer Prime'}</b> (Centro)</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-300">
+              <i class="fa-solid fa-location-dot text-emerald-400 text-xs"></i>
+              <span class="truncate">Entrega: <b>${order.address}</b></span>
+            </div>
+          </div>
+
+          <button
+            onclick="acceptOrder('${order.id}')"
+            class="w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-bolt text-amber-300"></i> Aceitar Corrida (+ R$ ${fee.toFixed(2).replace('.', ',')})
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('delivery-history-list');
+      if (!driverData || !driverData.wallet.history) return;
+
+      container.innerHTML = '';
+      driverData.wallet.history.slice(0, 5).forEach(tx => {
+        const item = document.createElement('div');
+        item.className = "bg-slate-900/70 border border-slate-800/80 rounded-xl px-3 py-2.5 flex items-center justify-between text-xs";
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <div>
+              <span class="font-bold text-white">${tx.orderCode}</span>
+              <span class="text-[10px] text-slate-400 block">${tx.address} • ${tx.time}</span>
+            </div>
+          </div>
+          <span class="font-bold text-emerald-400">+ R$ ${Number(tx.fee).toFixed(2).replace('.', ',')}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // =======================================================
+    // MODAL DE SAQUE PIX
+    // =======================================================
+    function openWithdrawModal() {
+      if (!driverData || driverData.wallet.balance <= 0) {
+        alert('Você não tem saldo disponível para saque no momento.');
+        return;
+      }
+      document.getElementById('withdraw-amount-display').innerText = `R$ ${driverData.wallet.balance.toFixed(2).replace('.', ',')}`;
+      document.getElementById('modal-withdraw').classList.remove('hidden');
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById('modal-withdraw').classList.add('hidden');
+    }
+
+    async function handleWithdraw(event) {
+      event.preventDefault();
+      const pixKey = document.getElementById('withdraw-key-input').value.trim();
+      const pixKeyType = document.getElementById('withdraw-key-type').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/driver/wallet/withdraw`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pixKey, pixKeyType }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`💸 SAQUE PIX ENVIADO!\n\nValor: R$ ${json.amount.toFixed(2)}\nChave: ${json.pixKey}\nID: ${json.txId}\n\nO valor cairá na sua conta bancária em instantes!`);
+          closeWithdrawModal();
+          driverData.wallet.balance = 0;
+          renderHeaderAndWallet();
+        } else {
+          alert(json.error || 'Erro ao processar saque.');
+        }
+      } catch (e) {
+        alert('Erro ao realizar saque.');
+      }
+    }
+
+    // =======================================================
+    // ATUALIZAÇÃO EM TEMPO REAL (SERVER-SENT EVENTS)
+    // =======================================================
+    function connectRealtime() {
+      try {
+        const es = new EventSource(`${API_BASE}/api/realtime`);
+        es.onmessage = (event) => {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'NEW_ORDER' || payload.type === 'STATUS_CHANGE') {
+            loadAvailableOrders();
+            loadDriverProfile();
+            if (payload.order?.status === 'in_preparation' || payload.order?.status === 'out_for_delivery') {
+              playNewRaceAlert();
+            }
+          }
+        };
+      } catch (e) {
+        console.log('SSE não suportado, usando polling.');
+        setInterval(loadAvailableOrders, 5000);
+      }
+    }
+  </script>
+</body>
+</html>
