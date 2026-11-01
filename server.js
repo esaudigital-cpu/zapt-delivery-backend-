@@ -212,7 +212,7 @@ app.post('/api/orders', (req, res) => {
     platformCommission,
     merchantNetAmount,
     paymentMethod: paymentMethod || 'PIX',
-    paymentStatus: paymentMethod === 'PIX' ? 'paid' : 'pending',
+    paymentStatus: (paymentMethod === 'PIX' || paymentMethod === 'DINHEIRO') ? 'pending' : 'paid',
     deliveryPin,
     driverId: null,
     driverName: null,
@@ -239,6 +239,263 @@ app.get('/api/orders/:id', (req, res) => {
   }
   res.json({ success: true, order });
 });
+
+// ====================================================================
+// GATEWAY DE PAGAMENTO PIX AUTOMÁTICO (MERCADO PAGO + SANDBOX)
+// ====================================================================
+const pixPayments = new Map();
+
+// Endpoint para verificar status do Gateway (Live ou Sandbox)
+app.get('/api/pix/config', (req, res) => {
+  const isLive = Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN);
+  res.json({
+    success: true,
+    provider: 'Mercado Pago',
+    mode: isLive ? 'production' : 'sandbox_simulator',
+    hasToken: isLive,
+  });
+});
+
+// Criar cobrança PIX dinâmica
+app.post('/api/pix/create-payment', async (req, res) => {
+  try {
+    const { orderId, amount, customerName, customerEmail, description } = req.body;
+    const order = orders.find((o) => o.id === orderId || o.orderCode === orderId);
+
+    const targetAmount = Number(amount || order?.total || 10.00);
+    const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+    if (mpToken) {
+      // Modo Mercado Pago Oficial (Produção / Teste Real)
+      const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${mpToken}`,
+          'X-Idempotency-Key': `${orderId || 'ord'}-${Date.now()}`
+        },
+        body: JSON.stringify({
+          transaction_amount: targetAmount,
+          description: description || `Pedido ${order?.orderCode || ''} - Zapt Delivery`,
+          payment_method_id: 'pix',
+          payer: {
+            email: customerEmail || 'cliente@zaptdelivery.com.br',
+            first_name: customerName || order?.customerName || 'Cliente Zapt',
+          },
+          external_reference: order?.id || orderId || `ref_${Date.now()}`,
+          notification_url: `${req.protocol}://${req.get('host')}/api/webhooks/mercadopago`
+        })
+      });
+
+      const mpData = await mpResponse.json();
+
+      if (mpData.id && mpData.point_of_interaction?.transaction_data) {
+        const paymentId = String(mpData.id);
+        const qrCode = mpData.point_of_interaction.transaction_data.qr_code;
+        const qrCodeBase64 = mpData.point_of_interaction.transaction_data.qr_code_base64;
+        const ticketUrl = mpData.point_of_interaction.transaction_data.ticket_url;
+
+        pixPayments.set(paymentId, {
+          paymentId,
+          orderId: order?.id || orderId,
+          orderCode: order?.orderCode,
+          amount: targetAmount,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          provider: 'mercadopago',
+        });
+
+        if (order) {
+          order.paymentId = paymentId;
+        }
+
+        console.log(`[PIX MERCADO PAGO CRIADO] ID: ${paymentId} | Valor: R$ ${targetAmount} | Pedido: ${order?.orderCode}`);
+
+        return res.json({
+          success: true,
+          provider: 'mercadopago',
+          mode: 'production',
+          paymentId,
+          qrCode,
+          qrCodeBase64: `data:image/png;base64,${qrCodeBase64}`,
+          ticketUrl,
+          amount: targetAmount,
+        });
+      } else {
+        console.error('[ERRO MERCADO PAGO API]', mpData);
+      }
+    }
+
+    // Modo Simulador Inteligente (Quando ainda não foi configurado o token no Render)
+    const simulatedPaymentId = `pix_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+    const pixKey = 'pix@zaptdelivery.com.br';
+    const fakeEMV = `00020126580014br.gov.bcb.pix0136${pixKey}520400005303986540${targetAmount.toFixed(2)}5802BR5915ZAPT DELIVERY6009SAO PAULO62070503${simulatedPaymentId.slice(-4)}6304`;
+    const simulatedQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fakeEMV)}&color=0052FF`;
+
+    pixPayments.set(simulatedPaymentId, {
+      paymentId: simulatedPaymentId,
+      orderId: order?.id || orderId,
+      orderCode: order?.orderCode,
+      amount: targetAmount,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      provider: 'simulator',
+    });
+
+    if (order) {
+      order.paymentId = simulatedPaymentId;
+    }
+
+    console.log(`[PIX SANDBOX CRIADO] ID: ${simulatedPaymentId} | Valor: R$ ${targetAmount} | Pedido: ${order?.orderCode}`);
+
+    return res.json({
+      success: true,
+      provider: 'simulator',
+      mode: 'sandbox_simulator',
+      paymentId: simulatedPaymentId,
+      qrCode: fakeEMV,
+      qrCodeUrl: simulatedQrCodeUrl,
+      amount: targetAmount,
+    });
+  } catch (err) {
+    console.error('[ERRO AO CRIAR PIX]', err);
+    res.status(500).json({ error: 'Erro ao gerar cobrança PIX', details: err.message });
+  }
+});
+
+// Consultar status do pagamento PIX (Polling pelo App)
+app.get('/api/pix/status/:paymentId', async (req, res) => {
+  const { paymentId } = req.params;
+  const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+  let paymentRecord = pixPayments.get(paymentId);
+
+  // Se for Mercado Pago e tiver token, checar status na API do Mercado Pago
+  if (mpToken && (!paymentRecord || paymentRecord.status !== 'approved')) {
+    try {
+      const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${mpToken}` },
+      });
+      if (mpRes.ok) {
+        const mpData = await mpRes.json();
+        if (mpData.status === 'approved') {
+          if (!paymentRecord) {
+            paymentRecord = { paymentId, status: 'approved' };
+            pixPayments.set(paymentId, paymentRecord);
+          } else {
+            paymentRecord.status = 'approved';
+          }
+
+          // Atualizar o pedido correspondente
+          const order = orders.find(
+            (o) => o.paymentId === paymentId || o.id === mpData.external_reference
+          );
+          if (order && order.paymentStatus !== 'paid') {
+            order.paymentStatus = 'paid';
+            order.status = 'in_preparation';
+            order.paidAt = new Date().toISOString();
+            notifyAll('STATUS_CHANGE', order);
+            console.log(`[PIX APROVADO MP] Pedido ${order.orderCode} pago via Mercado Pago!`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao consultar Mercado Pago:', e.message);
+    }
+  }
+
+  if (!paymentRecord) {
+    const order = orders.find((o) => o.paymentId === paymentId);
+    if (order) {
+      return res.json({
+        success: true,
+        paymentId,
+        status: order.paymentStatus === 'paid' ? 'approved' : 'pending',
+        orderId: order.id,
+        orderCode: order.orderCode,
+      });
+    }
+    return res.status(404).json({ error: 'Cobrança PIX não encontrada' });
+  }
+
+  res.json({
+    success: true,
+    paymentId,
+    status: paymentRecord.status,
+    orderId: paymentRecord.orderId,
+    orderCode: paymentRecord.orderCode,
+  });
+});
+
+// Simular aprovação instantânea (Botão do modo teste no App e no Painel)
+app.post('/api/pix/simulate-approval/:paymentId', (req, res) => {
+  const { paymentId } = req.params;
+  const paymentRecord = pixPayments.get(paymentId);
+
+  const order = orders.find(
+    (o) => o.paymentId === paymentId || o.id === paymentRecord?.orderId || o.orderCode === paymentRecord?.orderCode
+  );
+
+  if (paymentRecord) {
+    paymentRecord.status = 'approved';
+    paymentRecord.paidAt = new Date().toISOString();
+  }
+
+  if (order) {
+    order.paymentStatus = 'paid';
+    order.status = 'in_preparation';
+    order.paidAt = new Date().toISOString();
+    notifyAll('STATUS_CHANGE', order);
+    console.log(`[PIX SIMULADO APROVADO] Pedido ${order.orderCode} marcado como pago e em preparo!`);
+  }
+
+  res.json({
+    success: true,
+    message: 'Pagamento PIX simulado aprovado com sucesso!',
+    paymentId,
+    order,
+  });
+});
+
+// Webhook Oficial do Mercado Pago
+app.post('/api/webhooks/mercadopago', async (req, res) => {
+  try {
+    const paymentId = req.query['data.id'] || req.body?.data?.id || req.body?.id;
+    const action = req.body?.action || req.query?.topic;
+
+    console.log(`[WEBHOOK MERCADO PAGO RECEBIDO] ID: ${paymentId} | Action: ${action}`);
+
+    if (paymentId) {
+      const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+      if (mpToken) {
+        const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+          headers: { Authorization: `Bearer ${mpToken}` },
+        });
+        if (mpRes.ok) {
+          const mpData = await mpRes.json();
+          if (mpData.status === 'approved') {
+            const order = orders.find(
+              (o) => o.paymentId === String(paymentId) || o.id === mpData.external_reference
+            );
+            if (order) {
+              order.paymentStatus = 'paid';
+              order.status = 'in_preparation';
+              order.paidAt = new Date().toISOString();
+              notifyAll('STATUS_CHANGE', order);
+              console.log(`[WEBHOOK PIX APROVADO] Pedido ${order.orderCode} aprovado na cozinha!`);
+            }
+          }
+        }
+      }
+    }
+
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('[ERRO WEBHOOK MERCADO PAGO]', err);
+    res.status(200).send('OK');
+  }
+});
+
 
 // ====================================================================
 // ROTAS DE GESTÃO DE PEDIDOS (COZINHA / PAINEL)

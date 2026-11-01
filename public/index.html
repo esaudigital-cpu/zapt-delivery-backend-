@@ -632,9 +632,12 @@
             <span class="text-xs font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">${order.orderCode}</span>
             <span class="text-xs text-slate-400 ml-2">${new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
-          <span class="text-xs font-bold ${order.paymentMethod === 'PIX' ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'} px-2 py-0.5 rounded border">
-            ${order.paymentMethod}
-          </span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold ${order.paymentStatus === 'paid' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-amber-400 bg-amber-500/10 border-amber-500/30'} px-2 py-0.5 rounded border flex items-center gap-1">
+              <i class="fa-solid ${order.paymentStatus === 'paid' ? 'fa-circle-check text-emerald-400' : 'fa-hourglass-half text-amber-400'}"></i>
+              ${order.paymentMethod === 'PIX' ? (order.paymentStatus === 'paid' ? 'PIX APROVADO' : 'PIX PENDENTE') : order.paymentMethod}
+            </span>
+          </div>
         </div>
 
         <div class="mb-3">
