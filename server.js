@@ -212,7 +212,7 @@ app.post('/api/orders', (req, res) => {
     platformCommission,
     merchantNetAmount,
     paymentMethod: paymentMethod || 'PIX',
-    paymentStatus: (paymentMethod === 'PIX' || paymentMethod === 'DINHEIRO') ? 'pending' : 'paid',
+    paymentStatus: req.body.paymentStatus || (paymentMethod === 'DINHEIRO' ? 'pending' : (paymentMethod === 'PIX' ? 'pending' : 'paid')),
     deliveryPin,
     driverId: null,
     driverName: null,
@@ -718,19 +718,39 @@ app.get('/api/merchant/orders', (req, res) => {
 });
 
 app.patch('/api/merchant/orders/:id/status', (req, res) => {
-  const { status } = req.body;
+  const { status, paymentStatus } = req.body;
   const order = orders.find((o) => o.id === req.params.id || o.orderCode === req.params.id);
 
   if (!order) {
     return res.status(404).json({ error: 'Pedido não encontrado.' });
   }
 
-  order.status = status;
+  if (status) order.status = status;
+  if (paymentStatus) {
+    order.paymentStatus = paymentStatus;
+  } else if (status === 'in_preparation' && order.paymentMethod === 'PIX') {
+    // Ao aceitar o pedido para preparo, o lojista aprova o pedido e o PIX
+    order.paymentStatus = 'paid';
+  }
+
   order.updatedAt = new Date().toISOString();
   notifyAll('STATUS_CHANGE', order);
 
-  console.log(`[STATUS ATUALIZADO] Pedido ${order.orderCode} mudou para: ${status}`);
-  res.json({ success: true, message: `Status alterado para ${status}`, order });
+  console.log(`[STATUS ATUALIZADO] Pedido ${order.orderCode} mudou para: ${order.status} | Pagamento: ${order.paymentStatus}`);
+  res.json({ success: true, message: `Status alterado para ${order.status}`, order });
+});
+
+// Endpoint exclusivo para o restaurante confirmar pagamento do PIX com 1 clique
+app.patch('/api/merchant/orders/:id/confirm-payment', (req, res) => {
+  const order = orders.find((o) => o.id === req.params.id || o.orderCode === req.params.id);
+  if (!order) {
+    return res.status(404).json({ error: 'Pedido não encontrado.' });
+  }
+  order.paymentStatus = 'paid';
+  order.updatedAt = new Date().toISOString();
+  notifyAll('STATUS_CHANGE', order);
+  console.log(`[PAGAMENTO CONFIRMADO PELO RESTAURANTE] Pedido ${order.orderCode} marcado como PAGO!`);
+  res.json({ success: true, message: 'Pagamento confirmado com sucesso!', order });
 });
 
 // ====================================================================

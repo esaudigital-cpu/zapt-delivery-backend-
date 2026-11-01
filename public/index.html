@@ -542,6 +542,23 @@
       }
     }
 
+    async function confirmOrderPayment(orderId) {
+      try {
+        const res = await fetch(`${API_URL}/merchant/orders/${orderId}/confirm-payment`, {
+          method: 'PATCH'
+        });
+        const json = await res.json();
+        if (json.success) {
+          const idx = orders.findIndex(o => o.id === orderId || o.orderCode === orderId);
+          if (idx !== -1) orders[idx] = json.order;
+          renderKanban();
+          updateMetrics();
+        }
+      } catch (err) {
+        alert('Erro ao confirmar pagamento do PIX.');
+      }
+    }
+
     function printReceipt(order) {
       const comanda = document.getElementById('comanda-print');
       comanda.innerHTML = `
@@ -639,6 +656,11 @@
               <i class="fa-solid ${order.paymentStatus === 'paid' ? 'fa-circle-check text-emerald-400' : 'fa-hourglass-half text-amber-400'}"></i>
               ${order.paymentMethod === 'PIX' ? (order.paymentStatus === 'paid' ? 'PIX APROVADO' : 'PIX PENDENTE') : order.paymentMethod}
             </span>
+            ${order.paymentStatus !== 'paid' ? `
+              <button onclick="confirmOrderPayment('${order.id}')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-bold transition flex items-center gap-1 shadow-sm" title="Confirmar Recebimento do PIX">
+                <i class="fa-solid fa-check"></i> Aprovar
+              </button>
+            ` : ''}
           </div>
         </div>
 
