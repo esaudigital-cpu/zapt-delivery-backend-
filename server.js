@@ -264,6 +264,22 @@ app.get('/api/pix/config', (req, res) => {
   });
 });
 
+// Endpoint de diagnóstico do Asaas
+app.get('/api/pix/diagnostics', async (req, res) => {
+  const asaasKey = process.env.ASAAS_API_KEY;
+  if (!asaasKey) return res.json({ error: 'Nenhuma chave ASAAS_API_KEY configurada' });
+  const asaasUrl = asaasKey.includes('sandbox') ? 'https://api-sandbox.asaas.com/v3' : 'https://api.asaas.com/v3';
+  try {
+    const custRes = await fetch(`${asaasUrl}/customers?limit=1`, {
+      headers: { 'access_token': asaasKey }
+    });
+    const custData = await custRes.json();
+    res.json({ success: custRes.ok, status: custRes.status, asaasResponse: custData });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 // Criar cobrança PIX dinâmica
 app.post('/api/pix/create-payment', async (req, res) => {
   try {
@@ -280,8 +296,24 @@ app.post('/api/pix/create-payment', async (req, res) => {
     if (asaasKey) {
       const asaasUrl = asaasKey.includes('sandbox') ? 'https://api-sandbox.asaas.com/v3' : 'https://api.asaas.com/v3';
 
-      // 1.1 Criar ou reutilizar cliente no Asaas
+      // 1.1 Obter primeiro cliente existente na conta ou cadastrar cliente
       let customerId = asaasDefaultCustomerId;
+      if (!customerId) {
+        try {
+          const listRes = await fetch(`${asaasUrl}/customers?limit=1`, {
+            headers: { 'access_token': asaasKey }
+          });
+          const listData = await listRes.json();
+          if (listData && listData.data && listData.data.length > 0) {
+            customerId = listData.data[0].id;
+            asaasDefaultCustomerId = customerId;
+          }
+        } catch (e) {
+          console.warn('[ASAAS LIST ERR]', e.message);
+        }
+      }
+
+      // Se ainda não houver nenhum cliente na conta, cria um cliente consumidor
       if (!customerId) {
         try {
           const custRes = await fetch(`${asaasUrl}/customers`, {
@@ -291,7 +323,8 @@ app.post('/api/pix/create-payment', async (req, res) => {
               'access_token': asaasKey,
             },
             body: JSON.stringify({
-              name: customerName || order?.customerName || 'Cliente Zapt Delivery',
+              name: customerName || order?.customerName || 'Cliente Consumidor',
+              cpfCnpj: '00000000000',
               mobilePhone: (customerPhone || order?.customerPhone || '11999999999').replace(/\D/g, ''),
               notificationDisabled: true,
             })
@@ -300,6 +333,8 @@ app.post('/api/pix/create-payment', async (req, res) => {
           if (custData && custData.id) {
             customerId = custData.id;
             asaasDefaultCustomerId = customerId;
+          } else {
+            console.warn('[ASAAS CUSTOMER AVISO]', custData);
           }
         } catch (e) {
           console.warn('[ASAAS CUSTOMER ERR]', e.message);
