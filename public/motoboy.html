@@ -532,8 +532,14 @@
       document.getElementById('btn-route-delivery').href = `https://www.google.com/maps/dir/?api=1&destination=${deliveryAddressEncoded}`;
 
       // WhatsApp do Cliente
-      const phone = activeOrder.customerPhone || '5511999990000';
-      const zapMsg = encodeURIComponent(`Olá ${activeOrder.customerName}! Sou seu entregador do pedido ${activeOrder.orderCode}. Já estou a caminho do seu endereço!`);
+      const rawPhone = (activeOrder.customerPhone || '').replace(/\D/g, '');
+      let phone = rawPhone;
+      if (!phone || phone.length < 8) {
+        phone = '5588988892782';
+      } else if (!phone.startsWith('55')) {
+        phone = '55' + phone;
+      }
+      const zapMsg = encodeURIComponent(`Olá ${activeOrder.customerName || 'Cliente'}! Sou seu entregador Zapt do pedido ${activeOrder.orderCode}. Já retirei na ${activeOrder.storeName || 'loja'} e estou chegando com sua entrega!`);
       document.getElementById('btn-whatsapp-customer').href = `https://wa.me/${phone}?text=${zapMsg}`;
 
       // Badge de Pagamento

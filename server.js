@@ -121,25 +121,25 @@ let orders = [
   {
     id: 'ord_1001',
     orderCode: '#1001',
-    storeName: 'Burguer Prime Artesanal',
-    customerName: 'Lucas Silva',
-    customerPhone: '5511999993333',
-    address: 'Rua das Flores, 142 - Centro',
+    storeName: 'Pizzaria Ellen',
+    customerName: 'Esaú Monteiro',
+    customerPhone: '5588988892782',
+    address: 'Rua do Rosário, 120 - Centro, Barbalha - CE',
     status: 'in_preparation', // pending, accepted, in_preparation, out_for_delivery, delivered
     items: [
       {
-        name: 'Prime Smash Bacon Duplo',
+        name: 'Pizza Carne de Sol do Cariri com Queijo Coalho',
         quantity: 1,
-        unitPrice: 34.90,
-        options: ['Ao Ponto', 'Bacon Artesanal Extra'],
-        notes: 'Sem cebola por favor',
+        unitPrice: 49.90,
+        options: ['Borda Catupiry Original'],
+        notes: 'Caprichar na manteiga da terra por favor',
       },
     ],
-    subtotal: 39.90,
-    deliveryFee: 5.00,
-    total: 44.90,
-    platformCommission: 3.99, // 10%
-    merchantNetAmount: 35.91,
+    subtotal: 49.90,
+    deliveryFee: 3.50,
+    total: 53.40,
+    platformCommission: 5.34, // 10%
+    merchantNetAmount: 48.06,
     paymentMethod: 'PIX',
     paymentStatus: 'paid',
     deliveryPin: '4821',
@@ -153,20 +153,20 @@ let orders = [
 // Estado do Motoboy
 let driver = {
   id: 'drv_1',
-  name: 'Carlos Motoboy',
-  phone: '5511988887777',
+  name: 'Carlos Motoboy (Barbalha)',
+  phone: '5588988892782',
   vehicle: 'Honda Fan 160 (Preta)',
   plate: 'BRA-3E19',
   isOnline: true,
   currentOrderId: null,
   wallet: {
-    balance: 38.50,
-    todayDeliveries: 7,
-    totalEarnedToday: 38.50,
+    balance: 45.00,
+    todayDeliveries: 9,
+    totalEarnedToday: 45.00,
     history: [
-      { id: 'tx_1', orderCode: '#1001', fee: 5.50, time: '13:20', address: 'Rua das Flores, 142' },
-      { id: 'tx_2', orderCode: '#9842', fee: 6.00, time: '14:05', address: 'Av. Brasil, 890' },
-      { id: 'tx_3', orderCode: '#9855', fee: 5.00, time: '14:40', address: 'Rua Paraná, 55' },
+      { id: 'tx_1', orderCode: '#1001', fee: 5.00, time: '13:20', address: 'Rua do Rosário, 120 - Centro' },
+      { id: 'tx_2', orderCode: '#9842', fee: 5.00, time: '14:05', address: 'Cirolândia, Barbalha' },
+      { id: 'tx_3', orderCode: '#9855', fee: 6.00, time: '14:40', address: 'Bulandeira, Barbalha' },
     ],
   },
 };
