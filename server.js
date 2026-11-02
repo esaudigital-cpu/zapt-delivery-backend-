@@ -25,15 +25,15 @@ const categories = [
 ];
 
 const neighborhoods = [
-  { id: 'bairro_1', city: 'Barbalha', name: 'Centro (Barbalha)', baseDeliveryFee: 3.50, estimatedTimeMin: 20 },
-  { id: 'bairro_2', city: 'Barbalha', name: 'Santo Antônio', baseDeliveryFee: 4.00, estimatedTimeMin: 25 },
-  { id: 'bairro_3', city: 'Barbalha', name: 'Cirolândia', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
-  { id: 'bairro_4', city: 'Barbalha', name: 'Bela Vista / Malvinas', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
-  { id: 'bairro_5', city: 'Barbalha', name: 'Rosário', baseDeliveryFee: 4.50, estimatedTimeMin: 25 },
-  { id: 'bairro_6', city: 'Barbalha', name: 'Alto da Alegria', baseDeliveryFee: 5.00, estimatedTimeMin: 30 },
-  { id: 'bairro_7', city: 'Barbalha', name: 'Bulandeira', baseDeliveryFee: 6.00, estimatedTimeMin: 35 },
-  { id: 'bairro_8', city: 'Barbalha', name: 'Distrito de Caldas', baseDeliveryFee: 10.00, estimatedTimeMin: 45 },
-  { id: 'bairro_9', city: 'Barbalha', name: 'Arajara', baseDeliveryFee: 12.00, estimatedTimeMin: 50 },
+  { id: 'bairro_1', city: 'Barbalha', name: 'Centro (Barbalha)', baseDeliveryFee: 5.00, estimatedTimeMin: 20 },
+  { id: 'bairro_2', city: 'Barbalha', name: 'Santo Antônio', baseDeliveryFee: 5.50, estimatedTimeMin: 25 },
+  { id: 'bairro_3', city: 'Barbalha', name: 'Cirolândia', baseDeliveryFee: 6.50, estimatedTimeMin: 30 },
+  { id: 'bairro_4', city: 'Barbalha', name: 'Bela Vista / Malvinas', baseDeliveryFee: 6.50, estimatedTimeMin: 30 },
+  { id: 'bairro_5', city: 'Barbalha', name: 'Rosário', baseDeliveryFee: 6.00, estimatedTimeMin: 25 },
+  { id: 'bairro_6', city: 'Barbalha', name: 'Alto da Alegria', baseDeliveryFee: 6.50, estimatedTimeMin: 30 },
+  { id: 'bairro_7', city: 'Barbalha', name: 'Bulandeira', baseDeliveryFee: 7.50, estimatedTimeMin: 35 },
+  { id: 'bairro_8', city: 'Barbalha', name: 'Distrito de Caldas', baseDeliveryFee: 12.00, estimatedTimeMin: 45 },
+  { id: 'bairro_9', city: 'Barbalha', name: 'Arajara', baseDeliveryFee: 15.00, estimatedTimeMin: 50 },
 ];
 
 let products = [
@@ -187,7 +187,7 @@ app.get('/api/neighborhoods', (req, res) => {
 });
 
 app.post('/api/orders', (req, res) => {
-  const { store, items, subtotal, deliveryFee, total, paymentMethod, address, notes, customerName, customerPhone } = req.body;
+  const { store, items, subtotal, deliveryFee, serviceFee, total, paymentMethod, address, notes, customerName, customerPhone } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ error: 'A sacola não pode estar vazia.' });
@@ -205,14 +205,15 @@ app.post('/api/orders', (req, res) => {
     id: `ord_${randomNum}`,
     orderCode,
     storeId: store?.id || 'store_1',
-    storeName: store?.name || 'Burguer Prime Artesanal',
+    storeName: store?.name || 'Pizzaria Ellen',
     customerName: customerName || 'Esaú Monteiro',
-    customerPhone: customerPhone || '5511988887777',
-    address: address || 'Rua das Flores, 142 - Centro',
+    customerPhone: customerPhone || '5588988892782',
+    address: address || 'Rua do Rosário, 120 - Centro',
     status: 'pending',
     items: items || [],
     subtotal: Number(subtotal),
     deliveryFee: Number(deliveryFee) || 5.00,
+    serviceFee: Number(serviceFee) || 0.99,
     total: Number(total),
     platformCommission,
     merchantNetAmount,
