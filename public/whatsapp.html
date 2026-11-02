@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapt Delivery - Conectar Robô ao WhatsApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FF5500;
+      --primary-dark: #D44400;
+      --secondary: #FFD600;
+      --bg: #0B1120;
+      --surface: #1E293B;
+      --surface-light: #334155;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --radius: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top right, #1E1B4B, #0B1120 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 14px rgba(255, 85, 0, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title span {
+      color: var(--primary);
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.connected {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .status-badge.waiting {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .main-container {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      flex: 1;
+    }
+
+    @media (max-width: 860px) {
+      .main-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .qr-container {
+      background: #FFFFFF;
+      padding: 20px;
+      border-radius: 20px;
+      width: 280px;
+      height: 280px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .qr-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .qr-loading {
+      color: #0F172A;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #E2E8F0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .instruction-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 0.88rem;
+      line-height: 1.4;
+      color: #CBD5E1;
+    }
+
+    .step-text strong {
+      color: #fff;
+    }
+
+    /* Connected View */
+    .connected-card {
+      text-align: center;
+      padding: 30px 20px;
+      display: none;
+    }
+
+    .connected-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid var(--success);
+      color: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+    }
+
+    .connected-phone {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .connected-label {
+      font-size: 0.88rem;
+      color: var(--success);
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    /* Test Message Form */
+    .test-box {
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .input-field {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* Logs feed */
+    .log-feed {
+      flex: 1;
+      max-height: 480px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 6px;
+    }
+
+    .log-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+    }
+
+    .log-item.incoming {
+      border-left: 3px solid var(--secondary);
+    }
+
+    .log-item.outgoing {
+      border-left: 3px solid var(--success);
+    }
+
+    .log-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .log-text {
+      color: #E2E8F0;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/admin" class="brand">
+      <div class="brand-logo">⚡</div>
+      <div>
+        <div class="brand-title">Zapt<span>Delivery</span></div>
+        <div class="brand-subtitle">Central WhatsApp • Barbalha - CE</div>
+      </div>
+    </a>
+    <div id="statusBadge" class="status-badge">
+      <div class="status-dot"></div>
+      <span id="statusText">Desconectado</span>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- COLUNA 1: CONEXÃO & QR CODE -->
+    <div class="card">
+      <div class="card-title">📲 Conexão do WhatsApp Oficial</div>
+      <div class="card-desc">Conecte o chip de atendimento <strong>(88) 98889-2782</strong> para que o robô responda clientes e alerte as cozinhas em tempo real.</div>
+
+      <!-- QR CODE VIEW -->
+      <div id="qrSection">
+        <div class="qr-container">
+          <div id="qrLoading" class="qr-loading">
+            <div class="spinner"></div>
+            <span>Gerando QR Code seguro...</span>
+          </div>
+          <img id="qrImage" src="" alt="QR Code WhatsApp" style="display: none;" />
+        </div>
+
+        <div class="instruction-steps">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">Abra o <strong>WhatsApp</strong> no celular oficial do Zapt Delivery.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">Toque nos <strong>3 pontinhos</strong> (Android) ou <strong>Configurações</strong> (iPhone) e escolha <strong>Aparelhos Conectados</strong>.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">Toque em <strong>Conectar um aparelho</strong> e aponte a câmera para o QR Code acima.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALREADY CONNECTED VIEW -->
+      <div id="connectedSection" class="connected-card">
+        <div class="connected-icon">✓</div>
+        <div id="connectedPhoneDisplay" class="connected-phone">(88) 98889-2782</div>
+        <div class="connected-label">🟢 Robô Zapt Bot 100% Conectado e Ativo!</div>
+        <p style="font-size: 0.88rem; color: #94A3B8; margin-bottom: 20px;">
+          Qualquer cliente que mandar mensagem para este número será atendido automaticamente em menos de 2 segundos.
+        </p>
+
+        <!-- Test Message Box -->
+        <div class="test-box">
+          <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; text-align: left;">
+            🧪 Testar Envio de Mensagem WhatsApp
+          </div>
+          <div class="input-group">
+            <label class="input-label">Número do Destinatário (com DDD)</label>
+            <input id="testPhone" class="input-field" placeholder="Ex: 88988892782" value="88988892782" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Texto da Mensagem</label>
+            <input id="testMessage" class="input-field" placeholder="Digite uma mensagem de teste..." value="⚡ Teste Zapt Delivery: O robô está ativo e pronto para atender Barbalha!" />
+          </div>
+          <button class="btn btn-primary" onclick="sendTestMessage()">
+            🚀 Enviar Mensagem Agora
+          </button>
+        </div>
+
+        <button class="btn btn-danger" onclick="disconnect()">
+          🔌 Desconectar este Número
+        </button>
+      </div>
+    </div>
+
+    <!-- COLUNA 2: HISTÓRICO DE MENSAGENS EM TEMPO REAL -->
+    <div class="card">
+      <div class="card-title">💬 Monitor de Conversas ao Vivo</div>
+      <div class="card-desc">Mensagens enviadas e recebidas pelo robô em tempo real com clientes de Barbalha.</div>
+
+      <div id="logFeed" class="log-feed">
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 40px 0;">
+          Aguardando mensagens de clientes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Zapt Delivery • Sistema Autônomo de Atendimento WhatsApp • Barbalha - Ceará
+  </footer>
+
+  <script>
+    let pollInterval = null;
+
+    async function checkStatus() {
+      try {
+        const res = await fetch('/api/whatsapp/status');
+        const data = await res.json();
+
+        const badge = document.getElementById('statusBadge');
+        const text = document.getElementById('statusText');
+        const qrSection = document.getElementById('qrSection');
+        const connectedSection = document.getElementById('connectedSection');
+        const qrImage = document.getElementById('qrImage');
+        const qrLoading = document.getElementById('qrLoading');
+        const connectedPhoneDisplay = document.getElementById('connectedPhoneDisplay');
+
+        if (data.isConnected) {
+          badge.className = 'status-badge connected';
+          text.textContent = '🟢 100% Conectado';
+          qrSection.style.display = 'none';
+          connectedSection.style.display = 'block';
+          connectedPhoneDisplay.textContent = data.phone || '(88) 98889-2782';
+        } else if (data.status === 'WAITING_QR' && data.qrCodeDataUrl) {
+          badge.className = 'status-badge waiting';
+          text.textContent = '🟡 Aguardando Leitura';
+          qrSection.style.display = 'block';
+          connectedSection.style.display = 'none';
+          qrLoading.style.display = 'none';
+          qrImage.style.display = 'block';
+          qrImage.src = data.qrCodeDataUrl;
+        } else {
+          badge.className = 'status-badge';
+          text.textContent = '🔴 Desconectado';
+          qrSection.style.display = 'block';
+          connectedSection.style.display = 'none';
+          qrLoading.style.display = 'flex';
+          qrImage.style.display = 'none';
+        }
+
+        // Renderizar logs
+        if (data.logs && data.logs.length > 0) {
+          renderLogs(data.logs);
+        }
+      } catch (err) {
+        console.error('Erro ao verificar status do WhatsApp:', err);
+      }
+    }
+
+    function renderLogs(logs) {
+      const feed = document.getElementById('logFeed');
+      feed.innerHTML = logs.map(l => `
+        <div class="log-item ${l.type === 'INCOMING' ? 'incoming' : 'outgoing'}">
+          <div class="log-meta">
+            <span>${l.type === 'INCOMING' ? '📥 ' + l.name + ' (' + l.phone + ')' : '🤖 Zapt Bot → ' + l.phone}</span>
+            <span>${l.time}</span>
+          </div>
+          <div class="log-text">${escapeHtml(l.text)}</div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return (str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    async function sendTestMessage() {
+      const phone = document.getElementById('testPhone').value.trim();
+      const message = document.getElementById('testMessage').value.trim();
+
+      if (!phone || !message) {
+        alert('Preencha o número e o texto da mensagem.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/whatsapp/send-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, message })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Mensagem enviada com sucesso no WhatsApp!');
+          checkStatus();
+        } else {
+          alert('Erro ao enviar: ' + (data.error || 'Falha desconhecida'));
+        }
+      } catch (err) {
+        alert('Erro ao conectar ao servidor: ' + err.message);
+      }
+    }
+
+    async function disconnect() {
+      if (!confirm('Deseja realmente desconectar o robô do WhatsApp?')) return;
+      try {
+        await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+        alert('Desconectado! Um novo QR Code será gerado.');
+        checkStatus();
+      } catch (err) {
+        alert('Erro ao desconectar: ' + err.message);
+      }
+    }
+
+    // Iniciar verificação automática a cada 2.5 segundos
+    checkStatus();
+    pollInterval = setInterval(checkStatus, 2500);
+  </script>
+</body>
+</html>

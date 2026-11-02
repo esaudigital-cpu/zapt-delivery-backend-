@@ -13,11 +13,13 @@ const supportTickets = [];
 let serverOrders = [];
 let serverStores = [];
 let notifyFunction = null;
+let whatsappMessenger = null;
 
-function initBot(ordersRef, storesRef, notifyFn) {
+function initBot(ordersRef, storesRef, notifyFn, whatsappMessengerFn) {
   serverOrders = ordersRef;
   serverStores = storesRef;
   notifyFunction = notifyFn;
+  whatsappMessenger = whatsappMessengerFn;
   console.log('🤖 [ZAPT BOT] Robô de Atendimento do WhatsApp inicializado!');
 }
 
@@ -339,6 +341,21 @@ function triggerAutonomousStoreCheck(session, issueCategory) {
       issue: issueCategory,
       message: `🚨 O cliente ${ticket.customerName} abriu chamado sobre: ${issueCategory}!`,
     });
+  }
+
+  // Notificação direta via WhatsApp para o telefone da loja
+  if (whatsappMessenger && ticket.storePhone) {
+    const alertMsg = 
+`🚨 *ALERTA ZAPT DELIVERY - COZINHA*
+Cliente: *${ticket.customerName}* (${ticket.customerPhone})
+Pedido: *${ticket.orderCode}*
+Problema: *${issueCategory}*
+
+Por favor, responda com uma opção:
+*1* - Pedido já saiu com motoboy
+*2* - Em preparo final (10 min)
+*3* - Estamos ligando para o cliente agora`;
+    whatsappMessenger(ticket.storePhone, alertMsg).catch(() => {});
   }
 
   console.log(`🚨 [BOT -> LOJA] Alerta enviado para ${ticket.storeName}: Cliente ${ticket.customerName} reclama de ${issueCategory}`);

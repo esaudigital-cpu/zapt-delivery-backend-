@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const db = require('./db');
 const bot = require('./bot');
+const whatsapp = require('./whatsapp');
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use('/painel', express.static(path.join(__dirname, 'public')));
 app.get('/motoboy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'motoboy.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/whatsapp', (req, res) => res.sendFile(path.join(__dirname, 'public', 'whatsapp.html')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ====================================================================
@@ -117,6 +119,15 @@ let products = [
     imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80',
     isAvailable: true,
   },
+];
+
+// Estabelecimentos Parceiros em Barbalha
+let stores = [
+  { id: 'store_1', name: 'Pizzaria Ellen', category: 'Pizzas & Massas', address: 'Centro, Barbalha', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
+  { id: 'store_2', name: 'La Pasta Barbalha', category: 'Italiana & Massas', address: 'Rosário, Barbalha', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
+  { id: 'store_3', name: 'Filipinho Lanches', category: 'Hambúrgueres & Pasteis', address: 'Santo Antônio, Barbalha', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
+  { id: 'store_4', name: 'Farmácia Gentil', category: 'Medicamentos & Cuidados', address: 'Centro, Barbalha', phone: '5588988892782', commissionRate: 0.08, isOpen: true },
+  { id: 'store_5', name: 'Drogaria São João', category: 'Farmácia & Perfumaria', address: 'Cirolândia, Barbalha', phone: '5588988892782', commissionRate: 0.08, isOpen: true },
 ];
 
 // Estado dos Pedidos
@@ -1308,6 +1319,27 @@ app.post('/api/bot/webhook', async (req, res) => {
   }
 });
 
+// ====================================================================
+// CONEXÃO WHATSAPP EM TEMPO REAL (Baileys / QR Code)
+// ====================================================================
+app.get('/api/whatsapp/status', (req, res) => {
+  res.json(whatsapp.getStatus());
+});
+
+app.post('/api/whatsapp/send-test', async (req, res) => {
+  const { phone, message } = req.body;
+  if (!phone || !message) {
+    return res.status(400).json({ error: 'Telefone e mensagem são obrigatórios.' });
+  }
+  const result = await whatsapp.sendWhatsAppMessage(phone, message);
+  res.json(result);
+});
+
+app.post('/api/whatsapp/disconnect', async (req, res) => {
+  const result = await whatsapp.disconnectWhatsApp();
+  res.json(result);
+});
+
 // Inicializar Servidor
 app.listen(PORT, async () => {
   console.log(`=================================================`);
@@ -1316,10 +1348,14 @@ app.listen(PORT, async () => {
   console.log(`🖥️ Painel Restaurante: http://localhost:${PORT}/painel`);
   console.log(`🛵 Painel do Motoboy: http://localhost:${PORT}/motoboy`);
   console.log(`🤖 Robô Zapt Bot: http://localhost:${PORT}/painel/bot.html`);
+  console.log(`📲 Conectar WhatsApp: http://localhost:${PORT}/whatsapp`);
   console.log(`=================================================`);
 
-  // Inicializa o Robô de Atendimento com acesso aos pedidos e lojas
-  bot.initBot(orders, stores, notifyAll);
+  // Inicializa o Robô de Atendimento com acesso aos pedidos, lojas e envio WhatsApp
+  bot.initBot(orders, stores, notifyAll, whatsapp.sendWhatsAppMessage);
+
+  // Iniciar conexão com WhatsApp via Baileys (gera QR Code)
+  whatsapp.startWhatsApp();
 
   // Inicializa tabelas do PostgreSQL se configurado
   await db.initDatabase();
