@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapt Delivery - Proposta Comercial & Apresentação para Lojas de Barbalha</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FF5500;
+      --primary-dark: #D94500;
+      --primary-light: #FFF1EB;
+      --secondary: #0F172A;
+      --accent-yellow: #FFD600;
+      --success: #10B981;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* BARRA SUPERIOR / AÇÕES */
+    .top-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 16px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+    }
+    .top-action-bar h3 {
+      font-size: 15px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .print-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .print-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    /* CAPA PRINCIPAL */
+    .hero-card {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 32px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+    }
+    .hero-card::after {
+      content: "⚡";
+      position: absolute;
+      right: 20px;
+      bottom: -40px;
+      font-size: 220px;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 85, 0, 0.2);
+      border: 1px solid #FF5500;
+      color: #FF8A00;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .hero-title {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .hero-title span {
+      color: var(--primary);
+    }
+    .hero-subtitle {
+      font-size: 17px;
+      color: #94A3B8;
+      max-width: 640px;
+      margin-bottom: 24px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 13px;
+      color: #CBD5E1;
+    }
+    .hero-meta strong {
+      color: #fff;
+    }
+
+    /* SEÇÕES */
+    .section {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 36px 32px;
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      page-break-inside: avoid;
+    }
+    .section-header {
+      margin-bottom: 24px;
+    }
+    .section-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .section-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* GRID DE BENEFÍCIOS */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+      font-weight: bold;
+    }
+    .feature-card h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* TABELA COMPARATIVA */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .comparison-table th, .comparison-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-table th {
+      background: var(--bg);
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .comparison-table th.highlight {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    .comparison-table td.highlight {
+      background: rgba(255, 85, 0, 0.04);
+      font-weight: 700;
+      color: var(--primary-dark);
+      border-left: 2px solid var(--primary);
+      border-right: 2px solid var(--primary);
+    }
+    .badge-check {
+      color: var(--success);
+      font-weight: 800;
+      margin-right: 4px;
+    }
+    .badge-cross {
+      color: #EF4444;
+      font-weight: 800;
+      margin-right: 4px;
+    }
+
+    /* ETAPAS DA REUNIÃO */
+    .steps-row {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .step-content h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* SCRIPT DE WHATSAPP */
+    .whatsapp-box {
+      background: #F0FDF4;
+      border: 1.5px dashed #22C55E;
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 16px;
+      position: relative;
+    }
+    .whatsapp-box h4 {
+      color: #166534;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .script-text {
+      background: #FFFFFF;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #1E293B;
+      line-height: 1.6;
+      border: 1px solid #DCFCE7;
+      white-space: pre-wrap;
+    }
+
+    /* CARD DE CONTATO & FECHAMENTO */
+    .close-deal-card {
+      background: linear-gradient(135deg, #FF5500 0%, #D94500 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 36px 32px;
+      text-align: center;
+      margin-top: 32px;
+      box-shadow: 0 16px 32px rgba(255, 85, 0, 0.25);
+    }
+    .close-deal-card h3 {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .close-deal-card p {
+      font-size: 15px;
+      opacity: 0.95;
+      max-width: 600px;
+      margin: 0 auto 24px;
+    }
+    .contacts-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .contact-pill {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    /* IMPRESSÃO (PDF) */
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+      .top-action-bar {
+        display: none;
+      }
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+      .section, .hero-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- BARRA DE AÇÃO PARA O USUÁRIO -->
+    <div class="top-action-bar">
+      <div>
+        <h3>⚡ Apresentação Oficial Zapt Delivery - Barbalha</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+          Pronto para apresentar no celular/tablet ou imprimir em PDF (Ctrl + P)
+        </p>
+      </div>
+      <button class="print-btn" onclick="window.print()">
+        🖨️ Imprimir / Salvar em PDF
+      </button>
+    </div>
+
+    <!-- CAPA DA PROPOSTA COMERCIAL -->
+    <div class="hero-card">
+      <div class="hero-badge">⚡ O Delivery Oficial de Barbalha</div>
+      <h1 class="hero-title">Acelere as Vendas da sua Loja com o <span>Zapt Delivery</span></h1>
+      <p class="hero-subtitle">
+        A plataforma de pedidos online feita sob medida para os restaurantes, pizzarias, lanchonetes e farmácias de Barbalha – Ceará. Sem mensalidades abusivas e com dinheiro rápido na sua conta!
+      </p>
+
+      <div class="hero-meta">
+        <div><strong>Fundador & Direção Local:</strong> Esaú Monteiro</div>
+        <div><strong>WhatsApp Direto:</strong> (88) 98889-2782</div>
+        <div><strong>Cidade Polo:</strong> Barbalha – CE</div>
+        <div><strong>Lançamento:</strong> Edição Pioneiros 2026</div>
+      </div>
+    </div>
+
+    <!-- 1. A DOR DO COMERCIANTE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-tag">Diagnóstico</span>
+        <h2 class="section-title">Por que o comércio de Barbalha precisa do Zapt?</h2>
+        <p class="section-desc">Entenda por que as opções tradicionais custam tão caro para o seu negócio.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">💸</div>
+          <h4>Taxas Abusivas das Grandes Redes</h4>
+          <p>Plataformas nacionais chegam a morder de <strong>18% a 27%</strong> do valor do seu prato, além de cobrar mensalidade fixa mesmo se você não vender nada.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⏳</div>
+          <h4>Demora de 30 Dias para Repassar</h4>
+          <p>Você prepara o alimento hoje, gasta com insumos e funcionário, mas só recebe o dinheiro 1 mês depois. No Zapt, o repasse é instantâneo via Pix ou Split!</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h4>Suporte Robótico Inacessível</h4>
+          <p>Quando acontece um problema com cliente ou motoboy, você fala com um robô que não resolve. No Zapt, você tem o telefone direto do Esaú em Barbalha.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. TABELA COMPARATIVA -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-tag">Transparência Total</span>
+        <h2 class="section-title">Zapt Delivery vs. Outras Opções de Mercado</h2>
+        <p class="section-desc">Veja a diferença real na ponta do lápis para o faturamento da sua loja.</p>
+      </div>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Recurso / Condição</th>
+            <th class="highlight">⚡ Zapt Delivery (Barbalha)</th>
+            <th>Grandes Apps Nacionais</th>
+            <th>Vender só no WhatsApp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Taxa de Comissão</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> Justa e Acessível (10%)</td>
+            <td><span class="badge-cross">✖</span> Até 27% por pedido</td>
+            <td><span class="badge-check">✔</span> 0% de comissão</td>
+          </tr>
+          <tr>
+            <td><strong>Mensalidade Fixa</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> ZERO nos 30 dias pioneiros</td>
+            <td><span class="badge-cross">✖</span> R$ 130 a R$ 200/mês</td>
+            <td><span class="badge-check">✔</span> Sem custo</td>
+          </tr>
+          <tr>
+            <td><strong>Recebimento do Dinheiro</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> Split Automático na sua conta</td>
+            <td><span class="badge-cross">✖</span> 30 dias de retenção</td>
+            <td><span class="badge-check">✔</span> Direto com cliente</td>
+          </tr>
+          <tr>
+            <td><strong>Painel de Cozinha com Impressão</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> Sim (Impressão térmica 80/58mm)</td>
+            <td><span class="badge-check">✔</span> Sim</td>
+            <td><span class="badge-cross">✖</span> Não (atrapalha o atendente)</td>
+          </tr>
+          <tr>
+            <td><strong>Alarme Sonoro de Novos Pedidos</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> Alarme alto que não deixa perder pedido</td>
+            <td><span class="badge-check">✔</span> Sim</td>
+            <td><span class="badge-cross">✖</span> Mensagens se perdem</td>
+          </tr>
+          <tr>
+            <td><strong>Rede de Motoboys Integrada</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> Motoboys de Barbalha conectados</td>
+            <td><span class="badge-check">✔</span> Sim (com taxa alta)</td>
+            <td><span class="badge-cross">✖</span> Você tem que caçar motoboy</td>
+          </tr>
+          <tr>
+            <td><strong>Suporte Presencial na sua Cidade</strong></td>
+            <td class="highlight"><span class="badge-check">✔</span> 100% Barbalha (Esaú Monteiro)</td>
+            <td><span class="badge-cross">✖</span> Central em SP / Robôs</td>
+            <td><span class="badge-cross">✖</span> Não existe suporte</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- 3. O QUE A LOJA RECEBE AO ENTRAR -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-tag">Tecnologia Completa</span>
+        <h2 class="section-title">O que o Zapt Delivery entrega para sua loja:</h2>
+        <p class="section-desc">Tudo o que seu estabelecimento precisa para operar sem dor de cabeça.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h4>1. Cardápio Digital no App</h4>
+          <p>Sua loja com logo, fotos atraentes, categorias (pizzas, burgers, bebidas), opcionais (adicionais de bacon, borda recheada) e observações dos clientes.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🖥️</div>
+          <h4>2. Painel do Gestor de Cozinha</h4>
+          <p>Acesse pelo computador, tablet ou celular. O painel avisa com som a cada pedido novo, imprime a comanda na impressora térmica e muda os status com 1 clique.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🛵</div>
+          <h4>3. Radar de Motoboys com GPS</h4>
+          <p>Os motoboys da cidade recebem o alerta de corrida no app deles, com rota traçada pelo Google Maps até o restaurante e depois até a casa do cliente.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💳</div>
+          <h4>4. Pagamento Online & Maquininha</h4>
+          <p>O cliente pode pagar no PIX sem sair do app, no Cartão de Crédito Online com parcelamento, ou escolher pagar na maquininha ou dinheiro na entrega.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. ROTEIRO PASSO A PASSO DA REUNIÃO PRESENCIAL -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-tag">Guia de Demonstração</span>
+        <h2 class="section-title">Roteiro de 10 Minutos para Visita Presencial</h2>
+        <p class="section-desc">Siga este roteiro simples para encantar o dono da loja e fechar a parceria na hora:</p>
+      </div>
+
+      <div class="steps-row">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>Minuto 1 a 3: Quebra-Gelo e Pergunta Estratégica</h4>
+            <p>Cumprimente o proprietário: <em>"Olá, tudo bem? Meu nome é Esaú, sou aqui de Barbalha. Como estão os pedidos de delivery nos fins de semana? Vocês sofrem muito com a confusão do WhatsApp ou com as taxas altas do iFood?"</em> Deixe o comerciante desabafar.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Minuto 4 a 7: Demonstração ao Vivo no Celular</h4>
+            <p>Abra o app do Zapt no seu telefone: <em>"Olha só como a sua loja vai aparecer para os clientes de Barbalha..."</em>. Mostre a facilidade de colocar na sacola, calcular o frete do bairro na hora e faça um pedido de teste para o alarme tocar no painel de cozinha web!</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Minuto 8 a 10: Apresentação da Condição de Pioneiro</h4>
+            <p>Apresente o benefício exclusivo: <em>"Estamos selecionando as 5 principais marcas de Barbalha para serem as pioneiras oficiais. Você não paga taxa de cadastro, não paga mensalidade no primeiro mês e nós mesmos cadastramos todo o seu cardápio com fotos!"</em></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. SCRIPTS PRONTOS DE WHATSAPP -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-tag">Prospecção Rápida</span>
+        <h2 class="section-title">Mensagens Prontas para Enviar no WhatsApp dos Donos</h2>
+        <p class="section-desc">Copie e envie para os donos de pizzarias, lanchonetes e farmácias da cidade:</p>
+      </div>
+
+      <div class="whatsapp-box">
+        <h4>💬 Opção 1: Abordagem Direta para Agendamento Rápido</h4>
+        <div class="script-text">Olá, tudo bem? Aqui é o Esaú, sou de Barbalha e desenvolvedor do Zapt Delivery, o novo aplicativo de delivery exclusivo da nossa cidade! ⚡
+
+Estamos selecionando as melhores marcas gastronômicas de Barbalha para o lançamento oficial, e o cardápio de vocês não pode ficar de fora!
+
+Diferente do iFood, no Zapt nós não cobramos mensalidade abusiva e o repasse cai direto na conta da loja.
+
+Posso dar uma passada aí hoje ou amanhã para te mostrar uma prévia de 5 minutos de como sua loja vai ficar no app? Que horário fica melhor para você?</div>
+      </div>
+
+      <div class="whatsapp-box" style="margin-top: 20px;">
+        <h4>💬 Opção 2: Abordagem com Envio do Link de Demonstração</h4>
+        <div class="script-text">Boa tarde! Tudo bem? Quem fala aqui é o Esaú de Barbalha. 
+
+Gostaria de te convidar para conhecer o Zapt Delivery, o app feito para facilitar os pedidos de entrega aqui no município sem você perder até 27% em taxas para grandes empresas de fora.
+
+Acabamos de liberar uma prévia interativa com cardápio inteligente e painel com impressão térmica para cozinha. 
+
+Dá uma olhadinha no link do nosso painel de demonstração:
+👉 https://zapt-delivery-backend.onrender.com/painel
+
+Se fizer sentido para o crescimento das vendas de vocês, posso ir aí pessoalmente tomar um café e cadastrar seus pratos sem custo de adesão! Abraço!</div>
+      </div>
+    </div>
+
+    <!-- CARD FINAL DE FECHAMENTO -->
+    <div class="close-deal-card">
+      <h3>Vamos Juntos Fazer o Comércio de Barbalha Crescer?</h3>
+      <p>
+        O Zapt Delivery nasceu para valorizar o comércio local e entregar velocidade para quem compra e lucro real para quem vende.
+      </p>
+
+      <div class="contacts-row">
+        <a class="contact-pill" href="https://wa.me/5588988892782" target="_blank">
+          📲 WhatsApp: (88) 98889-2782
+        </a>
+        <a class="contact-pill" href="https://zapt-delivery-backend.onrender.com/painel" target="_blank">
+          🖥️ Ver Painel da Loja Online
+        </a>
+        <a class="contact-pill" href="https://expo.dev/artifacts/eas/Q-sEvh7xYeEIBUk6aVmlu42SyIU4FnyYYvWH0Ros7pU.apk" target="_blank">
+          📥 Baixar App v1.0.5 no Celular
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

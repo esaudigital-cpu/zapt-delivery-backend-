@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const db = require('./db');
+const bot = require('./bot');
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -11,6 +13,7 @@ app.use(express.json());
 // Servir o Painel Web do Restaurante (Gestor de Pedidos e Cardápio)
 app.use('/painel', express.static(path.join(__dirname, 'public')));
 app.get('/motoboy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'motoboy.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ====================================================================
@@ -229,6 +232,39 @@ app.post('/api/orders', (req, res) => {
   orders.unshift(newOrder);
   notifyAll('NEW_ORDER', newOrder);
 
+  // Persistência no Banco de Dados PostgreSQL Definitivo
+  if (db.isAvailable()) {
+    const addrStr = typeof newOrder.address === 'object' 
+      ? `${newOrder.address.street || ''}, ${newOrder.address.number || ''} ${newOrder.address.complement || ''}`.trim()
+      : String(newOrder.address || '');
+    const neighStr = typeof newOrder.address === 'object' && newOrder.address.neighborhood
+      ? (newOrder.address.neighborhood.name || 'Barbalha')
+      : 'Barbalha';
+
+    db.query(`
+      INSERT INTO orders (id, customer_name, customer_phone, delivery_address, neighborhood, store_id, store_name, items, subtotal, delivery_fee, service_fee, total, payment_method, payment_status, order_status, delivery_code)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      ON CONFLICT (id) DO UPDATE SET order_status = EXCLUDED.order_status, updated_at = NOW()
+    `, [
+      newOrder.id,
+      newOrder.customerName,
+      newOrder.customerPhone,
+      addrStr,
+      neighStr,
+      newOrder.storeId,
+      newOrder.storeName,
+      JSON.stringify(newOrder.items),
+      newOrder.subtotal,
+      newOrder.deliveryFee,
+      newOrder.serviceFee,
+      newOrder.total,
+      newOrder.paymentMethod,
+      newOrder.paymentStatus,
+      newOrder.status,
+      newOrder.deliveryPin
+    ]).catch(err => console.error('⚠️ [PG] Erro ao persistir pedido:', err.message));
+  }
+
   console.log(`[NOVO PEDIDO] ${orderCode} recebido para ${newOrder.storeName} - Total: R$ ${newOrder.total}`);
 
   res.status(201).json({
@@ -244,6 +280,111 @@ app.get('/api/orders/:id', (req, res) => {
     return res.status(404).json({ error: 'Pedido não encontrado.' });
   }
   res.json({ success: true, order });
+});
+
+// ====================================================================
+// AUTENTICAÇÃO DE CLIENTES (LOGIN, CADASTRO, RECUPERAÇÃO DE SENHA)
+// ====================================================================
+let registeredUsers = [
+  {
+    id: 'user_esau',
+    name: 'Esaú Monteiro',
+    email: 'esau@zaptdelivery.com.br',
+    phone: '(88) 98889-2782',
+    city: 'Barbalha - CE',
+    password: '123'
+  }
+];
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+  }
+
+  // Verificar no PostgreSQL se disponível
+  if (db.isAvailable()) {
+    try {
+      const dbRes = await db.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email.toLowerCase().trim()]);
+      if (dbRes && dbRes.rows.length > 0) {
+        const u = dbRes.rows[0];
+        return res.json({
+          success: true,
+          user: { id: u.id, name: u.name, email: u.email, phone: u.phone, city: u.city || 'Barbalha - CE' }
+        });
+      }
+    } catch (e) {
+      console.error('Erro na consulta do login:', e.message);
+    }
+  }
+
+  // Fallback em memória
+  let user = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+  if (!user) {
+    user = {
+      id: `usr_${Date.now()}`,
+      name: email.split('@')[0].toUpperCase(),
+      email: email.trim(),
+      phone: '(88) 98889-2782',
+      city: 'Barbalha - CE',
+      password
+    };
+    registeredUsers.push(user);
+  }
+
+  res.json({
+    success: true,
+    message: 'Login realizado com sucesso!',
+    user: { id: user.id, name: user.name, email: user.email, phone: user.phone, city: user.city }
+  });
+});
+
+app.post('/api/auth/register', async (req, res) => {
+  const { name, email, phone, password, city } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Nome e e-mail são obrigatórios.' });
+  }
+
+  const userId = `usr_${Date.now()}`;
+  const newUser = {
+    id: userId,
+    name: name.trim(),
+    email: email.trim().toLowerCase(),
+    phone: phone ? phone.trim() : '',
+    city: city || 'Barbalha - CE',
+    password: password || '123'
+  };
+
+  registeredUsers.push(newUser);
+
+  // Persistir no PostgreSQL se disponível
+  if (db.isAvailable()) {
+    db.query(`
+      INSERT INTO users (id, name, email, phone, city)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (phone) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email
+    `, [userId, newUser.name, newUser.email, newUser.phone, newUser.city])
+    .catch(e => console.error('Erro ao cadastrar usuário no PostgreSQL:', e.message));
+  }
+
+  console.log(`[CADASTRO] Novo cliente cadastrado: ${newUser.name} (${newUser.email}) - ${newUser.city}`);
+
+  res.status(201).json({
+    success: true,
+    message: 'Conta criada com sucesso!',
+    user: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone, city: newUser.city }
+  });
+});
+
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { email, phone } = req.body;
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  console.log(`[RECUPERAÇÃO DE SENHA] Código ${code} gerado para ${email || phone}`);
+  res.json({
+    success: true,
+    message: `Código de verificação enviado com sucesso para ${email || phone}!`,
+    code
+  });
 });
 
 // ====================================================================
@@ -1114,12 +1255,72 @@ function notifyAll(type, order) {
   });
 }
 
+// ====================================================================
+// ROBÔ DE ATENDIMENTO WHATSAPP & SUPORTE AUTÔNOMO (ZAPT BOT)
+// ====================================================================
+app.post('/api/bot/message', async (req, res) => {
+  const { phone, text, customerName } = req.body;
+  if (!phone || !text) {
+    return res.status(400).json({ error: 'Telefone e mensagem são obrigatórios.' });
+  }
+  const result = await bot.processIncomingMessage(phone, text, { customerName });
+  res.json({ success: true, ...result });
+});
+
+app.post('/api/bot/store-response', (req, res) => {
+  const { ticketId, responseCode, customNotes } = req.body;
+  if (!ticketId || !responseCode) {
+    return res.status(400).json({ error: 'ID do chamado e código de resposta são obrigatórios.' });
+  }
+  const result = bot.handleStoreResponse(ticketId, responseCode, customNotes);
+  if (!result) {
+    return res.status(404).json({ error: 'Chamado não encontrado.' });
+  }
+  notifyAll('SUPPORT_STORE_RESPONSE', result);
+  res.json({ success: true, ...result });
+});
+
+app.get('/api/bot/tickets', (req, res) => {
+  res.json({ success: true, tickets: bot.getTickets() });
+});
+
+app.get('/api/bot/sessions', (req, res) => {
+  res.json({ success: true, sessions: bot.getSessions() });
+});
+
+// Webhook para WhatsApp (compatível com Z-API, Evolution API, Baileys, Meta Cloud API)
+app.post('/api/bot/webhook', async (req, res) => {
+  try {
+    const body = req.body;
+    const phone = body.phone || body.sender || body.from || (body.data && body.data.key && body.data.key.remoteJid);
+    const message = body.text || body.message || (body.data && body.data.message && (body.data.message.conversation || body.data.message.extendedTextMessage?.text));
+    const customerName = body.senderName || body.pushName || 'Cliente WhatsApp';
+
+    if (phone && message) {
+      const result = await bot.processIncomingMessage(phone, message, { customerName });
+      console.log(`[WHATSAPP WEBHOOK] De: ${phone} -> Resposta: "${result.reply.slice(0, 50)}..."`);
+      return res.json({ success: true, reply: result.reply });
+    }
+    res.json({ status: 'ignored_or_event' });
+  } catch (err) {
+    console.error('Erro no Webhook do WhatsApp:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Inicializar Servidor
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`=================================================`);
   console.log(`🚀 SERVIDOR DO DELIVERY RODANDO NA PORTA ${PORT}`);
   console.log(`🔗 API Local: http://localhost:${PORT}/api/categories`);
   console.log(`🖥️ Painel Restaurante: http://localhost:${PORT}/painel`);
   console.log(`🛵 Painel do Motoboy: http://localhost:${PORT}/motoboy`);
+  console.log(`🤖 Robô Zapt Bot: http://localhost:${PORT}/painel/bot.html`);
   console.log(`=================================================`);
+
+  // Inicializa o Robô de Atendimento com acesso aos pedidos e lojas
+  bot.initBot(orders, stores, notifyAll);
+
+  // Inicializa tabelas do PostgreSQL se configurado
+  await db.initDatabase();
 });

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapt Master - Painel Administrativo Geral (Barbalha - CE)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FF5500;
+      --primary-dark: #D94500;
+      --primary-light: #FFF1EB;
+      --secondary: #0F172A;
+      --accent-yellow: #FFD600;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --border: #E2E8F0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR */
+    .header-bar {
+      background: var(--secondary);
+      color: #fff;
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid var(--primary);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-col {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(255, 85, 0, 0.4);
+    }
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-title span { color: var(--primary); }
+    .city-tag {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #CBD5E1;
+    }
+
+    .admin-profile {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .admin-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .admin-name {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .admin-role {
+      font-size: 11px;
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    /* CONTAINER PRINCIPAL */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* CARDS DE KPIS / FINANÇAS */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    .kpi-primary::before { background: var(--primary); }
+    .kpi-success::before { background: var(--success); }
+    .kpi-warning::before { background: var(--warning); }
+    .kpi-secondary::before { background: var(--secondary); }
+
+    .kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .kpi-icon {
+      font-size: 20px;
+    }
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .kpi-badge-profit {
+      background: #DCFCE7;
+      color: #166534;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 11px;
+    }
+
+    /* ABAS DE NAVEGAÇÃO */
+    .tabs-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .tab-btn:hover:not(.active) {
+      background: #E2E8F0;
+      color: var(--text);
+    }
+
+    /* TABELAS */
+    .section-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      margin-bottom: 28px;
+    }
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .action-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { background: var(--primary-dark); }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th, .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table th {
+      background: var(--bg);
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    .store-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 11px;
+    }
+    .store-open { background: #DCFCE7; color: #166534; }
+    .store-closed { background: #FEE2E2; color: #991B1B; }
+
+    .toggle-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .toggle-btn:hover { background: #E2E8F0; }
+
+    /* FOOTER */
+    .footer {
+      background: var(--secondary);
+      color: #94A3B8;
+      padding: 18px 24px;
+      text-align: center;
+      font-size: 12px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      margin-top: auto;
+    }
+    .footer a { color: var(--primary); text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header-bar">
+    <div class="brand-col">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">Zapt <span>Master</span></div>
+        <div style="font-size: 11px; color: #94A3B8;">Painel de Controle Central</div>
+      </div>
+      <span class="city-tag">📍 Barbalha - CE</span>
+    </div>
+
+    <div class="admin-profile">
+      <div class="admin-avatar">EM</div>
+      <div>
+        <div class="admin-name">Esaú Monteiro</div>
+        <div class="admin-role">Super Administrador</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <div class="container">
+
+    <!-- CARDS DE MÉTRICAS FINANCEIRAS -->
+    <div class="kpi-grid">
+      <!-- 1. FATURAMENTO TOTAL DA CIDADE -->
+      <div class="kpi-card kpi-secondary">
+        <div class="kpi-header">
+          <span class="kpi-label">Faturamento Total (Barbalha)</span>
+          <span class="kpi-icon">💰</span>
+        </div>
+        <div class="kpi-value" id="totalSalesDisplay">R$ 4.280,00</div>
+        <div class="kpi-sub">
+          <span>Total movimentado nas lojas</span>
+        </div>
+      </div>
+
+      <!-- 2. SEU LUCRO LÍQUIDO DIRETO -->
+      <div class="kpi-card kpi-primary">
+        <div class="kpi-header">
+          <span class="kpi-label">Seu Lucro Líquido (Zapt)</span>
+          <span class="kpi-icon">⚡</span>
+        </div>
+        <div class="kpi-value" id="netProfitDisplay" style="color: var(--primary);">R$ 518,42</div>
+        <div class="kpi-sub">
+          <span class="kpi-badge-profit">10% Comissão + R$ 0,99 Taxa</span>
+        </div>
+      </div>
+
+      <!-- 3. TOTAL DE PEDIDOS -->
+      <div class="kpi-card kpi-success">
+        <div class="kpi-header">
+          <span class="kpi-label">Pedidos Concluídos</span>
+          <span class="kpi-icon">📦</span>
+        </div>
+        <div class="kpi-value" id="totalOrdersDisplay">91</div>
+        <div class="kpi-sub">
+          <span>Média de 30 pedidos/dia</span>
+        </div>
+      </div>
+
+      <!-- 4. REPASSE DOS MOTOBOYS -->
+      <div class="kpi-card kpi-warning">
+        <div class="kpi-header">
+          <span class="kpi-label">Repasse aos Motoboys</span>
+          <span class="kpi-icon">🛵</span>
+        </div>
+        <div class="kpi-value" id="driversPayoutDisplay">R$ 592,50</div>
+        <div class="kpi-sub">
+          <span>100% da taxa de entrega para os pilotos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABAS -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('stores')">🏪 Estabelecimentos de Barbalha</button>
+      <button class="tab-btn" onclick="switchTab('orders')">📋 Pedidos em Tempo Real</button>
+      <button class="tab-btn" onclick="switchTab('drivers')">🛵 Motoboys Parceiros</button>
+      <button class="tab-btn" onclick="switchTab('support')">🤖 Chamados do Zapt Bot</button>
+    </div>
+
+    <!-- SEÇÃO 1: ESTABELECIMENTOS -->
+    <div class="section-card" id="tabStores">
+      <div class="section-header-row">
+        <h3 class="section-title">
+          <span>🏪 Lojas Cadastradas em Barbalha</span>
+        </h3>
+        <button class="action-btn" onclick="addNewStore()">+ Nova Loja</button>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Estabelecimento</th>
+            <th>Segmento</th>
+            <th>Comissão Zapt</th>
+            <th>Chave Pix da Loja</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="storesTableBody">
+          <tr>
+            <td><strong>Pizzaria Ellen</strong></td>
+            <td>Pizzaria & Lanches</td>
+            <td><strong>10%</strong></td>
+            <td>ellen@pizzaria.com.br</td>
+            <td><span class="store-badge store-open">● Aberto</span></td>
+            <td><button class="toggle-btn" onclick="toggleStoreStatus('Pizzaria Ellen')">Pausar Loja</button></td>
+          </tr>
+          <tr>
+            <td><strong>La Pasta</strong></td>
+            <td>Restaurante Italiano</td>
+            <td><strong>10%</strong></td>
+            <td>contato@lapasta.com.br</td>
+            <td><span class="store-badge store-open">● Aberto</span></td>
+            <td><button class="toggle-btn" onclick="toggleStoreStatus('La Pasta')">Pausar Loja</button></td>
+          </tr>
+          <tr>
+            <td><strong>Filipinho Pizzaria</strong></td>
+            <td>Pizzas Artesanais</td>
+            <td><strong>10%</strong></td>
+            <td>filipinho@gmail.com</td>
+            <td><span class="store-badge store-open">● Aberto</span></td>
+            <td><button class="toggle-btn" onclick="toggleStoreStatus('Filipinho Pizzaria')">Pausar Loja</button></td>
+          </tr>
+          <tr>
+            <td><strong>Farmácia Gentil</strong></td>
+            <td>Farmácia & Medicamentos</td>
+            <td><strong>10%</strong></td>
+            <td>(88) 99999-0000</td>
+            <td><span class="store-badge store-open">● Aberto</span></td>
+            <td><button class="toggle-btn" onclick="toggleStoreStatus('Farmácia Gentil')">Pausar Loja</button></td>
+          </tr>
+          <tr>
+            <td><strong>Drogaria São João</strong></td>
+            <td>Medicamentos & Conveniência</td>
+            <td><strong>10%</strong></td>
+            <td>saojoao@farmacia.com.br</td>
+            <td><span class="store-badge store-open">● Aberto</span></td>
+            <td><button class="toggle-btn" onclick="toggleStoreStatus('Drogaria São João')">Pausar Loja</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SEÇÃO 2: PEDIDOS EM TEMPO REAL -->
+    <div class="section-card" id="tabOrders" style="display: none;">
+      <div class="section-header-row">
+        <h3 class="section-title">
+          <span>📋 Pedidos do Dia (Barbalha - CE)</span>
+        </h3>
+        <button class="action-btn" onclick="loadRealtimeData()">🔄 Atualizar</button>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Cliente</th>
+            <th>Loja</th>
+            <th>Bairro</th>
+            <th>Total</th>
+            <th>Sua Comissão</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr>
+            <td><strong>#8492</strong></td>
+            <td>Esaú Monteiro</td>
+            <td>Pizzaria Ellen</td>
+            <td>Centro</td>
+            <td>R$ 74,80</td>
+            <td style="color: var(--primary); font-weight: bold;">R$ 7,48 + R$ 0,99</td>
+            <td><span class="store-badge store-open">Saiu p/ Entrega</span></td>
+          </tr>
+          <tr>
+            <td><strong>#8491</strong></td>
+            <td>Ana Beatriz</td>
+            <td>La Pasta</td>
+            <td>Rosário</td>
+            <td>R$ 48,00</td>
+            <td style="color: var(--primary); font-weight: bold;">R$ 4,80 + R$ 0,99</td>
+            <td><span class="store-badge store-open">Entregue</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SEÇÃO 3: MOTOBOYS PARCEIROS -->
+    <div class="section-card" id="tabDrivers" style="display: none;">
+      <div class="section-header-row">
+        <h3 class="section-title">
+          <span>🛵 Motoboys Cadastrados no Cariri</span>
+        </h3>
+        <button class="action-btn">+ Novo Motoboy</button>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Entregador</th>
+            <th>Veículo</th>
+            <th>Placa</th>
+            <th>Telefone WhatsApp</th>
+            <th>Corridas Hoje</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Carlos Silva</strong></td>
+            <td>Honda Titan 160</td>
+            <td>BRA-2E19</td>
+            <td>(88) 98111-2233</td>
+            <td><strong>14</strong></td>
+            <td><span class="store-badge store-open">● Online</span></td>
+          </tr>
+          <tr>
+            <td><strong>Marcos Oliveira</strong></td>
+            <td>Honda Fan 150</td>
+            <td>CE-7B42</td>
+            <td>(88) 98222-3344</td>
+            <td><strong>9</strong></td>
+            <td><span class="store-badge store-open">● Em Rota</span></td>
+          </tr>
+          <tr>
+            <td><strong>Rafael Souza</strong></td>
+            <td>Honda Bros 160</td>
+            <td>BAR-1020</td>
+            <td>(88) 98333-4455</td>
+            <td><strong>18</strong></td>
+            <td><span class="store-badge store-open">● Online</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SEÇÃO 4: CHAMADOS DO ZAPT BOT -->
+    <div class="section-card" id="tabSupport" style="display: none;">
+      <div class="section-header-row">
+        <h3 class="section-title">
+          <span>🤖 Chamados de Atendimento do Robô</span>
+        </h3>
+        <a href="/painel/bot.html" target="_blank" class="action-btn">Abrir Simulador WhatsApp</a>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Loja</th>
+            <th>Problema Relatado</th>
+            <th>Resolução</th>
+          </tr>
+        </thead>
+        <tbody id="adminTicketsBody">
+          <tr>
+            <td><strong>#8492</strong></td>
+            <td>Esaú Monteiro</td>
+            <td>Pizzaria Ellen</td>
+            <td><span style="color: var(--danger); font-weight: bold;">Pedido Atrasado</span></td>
+            <td><span class="store-badge store-open">Resolvido (Loja enviou motoboy)</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- RODAPÉ -->
+  <footer class="footer">
+    Zapt Delivery &copy; 2026 • Plataforma Oficial de Delivery de Barbalha – Ceará • Desenvolvido com tecnologia de ponta
+  </footer>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('tabStores').style.display = tabId === 'stores' ? 'block' : 'none';
+      document.getElementById('tabOrders').style.display = tabId === 'orders' ? 'block' : 'none';
+      document.getElementById('tabDrivers').style.display = tabId === 'drivers' ? 'block' : 'none';
+      document.getElementById('tabSupport').style.display = tabId === 'support' ? 'block' : 'none';
+    }
+
+    function toggleStoreStatus(storeName) {
+      alert(`Status da loja ${storeName} alterado com sucesso!`);
+    }
+
+    function addNewStore() {
+      const name = prompt('Digite o nome da nova loja em Barbalha:');
+      if (name) {
+        alert(`Loja "${name}" cadastrada! Agora você pode adicionar produtos no cardápio.`);
+      }
+    }
+
+    async function loadRealtimeData() {
+      try {
+        const res = await fetch('/api/orders');
+        const data = await res.json();
+        if (data.orders && data.orders.length > 0) {
+          const tbody = document.getElementById('ordersTableBody');
+          tbody.innerHTML = data.orders.map(o => `
+            <tr>
+              <td><strong>${o.orderCode || o.id}</strong></td>
+              <td>${o.customerName || 'Cliente'}</td>
+              <td>${o.storeName}</td>
+              <td>${typeof o.address === 'object' ? (o.address.neighborhood?.name || 'Centro') : 'Barbalha'}</td>
+              <td>R$ ${(o.total || 0).toFixed(2).replace('.', ',')}</td>
+              <td style="color: var(--primary); font-weight: bold;">R$ ${(o.platformCommission || 0).toFixed(2).replace('.', ',')} + R$ 0,99</td>
+              <td><span class="store-badge store-open">${o.status}</span></td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+
+    // Carregar chamados de suporte do robô
+    async function loadSupportTickets() {
+      try {
+        const res = await fetch('/api/bot/tickets');
+        const data = await res.json();
+        if (data.tickets && data.tickets.length > 0) {
+          const tbody = document.getElementById('adminTicketsBody');
+          tbody.innerHTML = data.tickets.map(t => `
+            <tr>
+              <td><strong>${t.orderCode}</strong></td>
+              <td>${t.customerName}</td>
+              <td>${t.storeName}</td>
+              <td><span style="color: var(--danger); font-weight: bold;">${t.issueCategory}</span></td>
+              <td><span class="store-badge store-open">${t.status}</span></td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+
+    loadRealtimeData();
+    loadSupportTickets();
+  </script>
+</body>
+</html>

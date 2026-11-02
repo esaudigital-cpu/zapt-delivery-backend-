@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapt Bot - Simulador & Central de Atendimento Autônomo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FF5500;
+      --primary-dark: #D94500;
+      --primary-light: #FFF1EB;
+      --secondary: #0F172A;
+      --whatsapp-green: #25D366;
+      --whatsapp-dark: #075E54;
+      --whatsapp-bg: #EFEAE2;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --border: #E2E8F0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR */
+    .top-nav {
+      background: var(--secondary);
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary);
+    }
+    .top-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .top-badge {
+      background: var(--primary);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .nav-links a {
+      color: #94A3B8;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      margin-left: 16px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #fff; }
+
+    /* LAYOUT PRINCIPAL: 2 COLUNAS */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
+      padding: 24px;
+      max-width: 1300px;
+      margin: 0 auto;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* CELULAR WHATSAPP */
+    .phone-mockup {
+      background: #111;
+      border-radius: 40px;
+      padding: 14px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      border: 4px solid #333;
+      height: 700px;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone-screen {
+      background: var(--whatsapp-bg);
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .chat-header {
+      background: var(--whatsapp-dark);
+      color: #fff;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bot-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 18px;
+    }
+    .chat-header-info h4 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .chat-header-info p {
+      font-size: 11px;
+      opacity: 0.85;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .msg {
+      max-width: 82%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      position: relative;
+      white-space: pre-wrap;
+    }
+    .msg-bot {
+      background: #FFFFFF;
+      align-self: flex-start;
+      border-top-left-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      color: #111827;
+    }
+    .msg-user {
+      background: #D9FDD3;
+      align-self: flex-end;
+      border-top-right-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      color: #111827;
+    }
+    .msg-time {
+      font-size: 10px;
+      color: #888;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .chat-input-bar {
+      background: #F0F2F5;
+      padding: 10px 14px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .chat-input {
+      flex: 1;
+      border: none;
+      background: #fff;
+      border-radius: 20px;
+      padding: 10px 16px;
+      font-size: 13px;
+      outline: none;
+    }
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--whatsapp-green);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: transform 0.15s;
+    }
+    .send-btn:hover { transform: scale(1.05); }
+
+    /* BOTÕES DE RESPOSTA RÁPIDA */
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+    }
+    .chip-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip-btn:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* LADO DIREITO: CENTRAL DA LOJA & DISPARO AUTÔNOMO */
+    .dashboard-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .dash-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .dash-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-live {
+      background: #DCFCE7;
+      color: #166534;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .alert-box {
+      background: #FEF2F2;
+      border: 2px dashed #EF4444;
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 12px;
+      display: none;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .alert-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      color: #991B1B;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .alert-desc {
+      font-size: 13px;
+      color: #7F1D1D;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .store-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .store-btn {
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .store-btn-success { background: var(--whatsapp-green); color: #fff; }
+    .store-btn-warning { background: #F59E0B; color: #fff; }
+    .store-btn-primary { background: var(--primary); color: #fff; }
+    .store-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+
+    .tickets-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    .tickets-table th, .tickets-table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .tickets-table th {
+      background: var(--bg);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .phone-mockup { height: 600px; max-width: 420px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPO -->
+  <header class="top-nav">
+    <div class="top-brand">
+      <span>⚡ Zapt Delivery</span>
+      <span class="top-badge">Robô WhatsApp & Suporte</span>
+    </div>
+    <div class="nav-links">
+      <a href="/painel">🖥️ Painel Restaurante</a>
+      <a href="/motoboy">🛵 Radar Motoboy</a>
+      <a href="https://wa.me/5588988892782" target="_blank">📲 Central de Suporte</a>
+    </div>
+  </header>
+
+  <!-- GRID PRINCIPAL -->
+  <main class="main-grid">
+
+    <!-- COLUNA 1: SIMULADOR DO CELULAR DO CLIENTE NO WHATSAPP -->
+    <div class="phone-mockup">
+      <div class="phone-screen">
+        <div class="chat-header">
+          <div class="bot-avatar">⚡</div>
+          <div class="chat-header-info">
+            <h4>Zapt Suporte Barbalha</h4>
+            <p>online agora • Resposta automática</p>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg msg-bot">
+⚡ <strong>Olá! Bem-vindo ao Suporte do Zapt Delivery Barbalha!</strong>
+Sou o assistente virtual oficial do aplicativo e respondo na hora!
+
+📍 <em>Pedido Identificado: #8492 na Pizzaria Ellen</em>
+
+Como posso te ajudar agora? Digite o número:
+
+<strong>1</strong> - ⏳ Meu pedido está demorando / atrasado
+<strong>2</strong> - ❌ Veio item faltando ou trocado
+<strong>3</strong> - 🛵 Onde está o motoboy?
+<strong>4</strong> - 💳 Dúvida sobre pagamento / Pix
+<strong>5</strong> - 💬 Outros assuntos (descreva o que precisa)
+            <div class="msg-time">Agora mesmo</div>
+          </div>
+        </div>
+
+        <!-- ATALHOS DE RESPOSTA RÁPIDA -->
+        <div class="quick-chips">
+          <button class="chip-btn" onclick="sendQuick('1')">1 - Pedido Atrasado ⏳</button>
+          <button class="chip-btn" onclick="sendQuick('2')">2 - Item Faltando ❌</button>
+          <button class="chip-btn" onclick="sendQuick('3')">3 - Cadê o Motoboy? 🛵</button>
+          <button class="chip-btn" onclick="sendQuick('4')">4 - Dúvida Pix 💳</button>
+          <button class="chip-btn" onclick="sendQuick('5')">5 - Outros Assuntos 💬</button>
+        </div>
+
+        <!-- BARRA DE DIGITAÇÃO -->
+        <div class="chat-input-bar">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Digite uma mensagem ou número..." onkeypress="handleKeyPress(event)" />
+          <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA 2: CENTRAL DA LOJA & PAINEL DE DISPARO AUTÔNOMO -->
+    <div class="dashboard-col">
+
+      <!-- CARD DO ALERTA AUTÔNOMO RECEBIDO PELA LOJA -->
+      <div class="dash-card">
+        <div class="dash-header">
+          <h3 class="dash-title">
+            <span>🍕 Visão da Cozinha da Pizzaria Ellen</span>
+          </h3>
+          <span class="badge-live">● Conectado em Tempo Real</span>
+        </div>
+
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">
+          Quando o cliente clica em "Pedido Atrasado" no WhatsApp ou no app, o robô faz essa checagem automática aqui na tela da loja na hora:
+        </p>
+
+        <!-- CAIXA DE ALERTA VERMELHO QUANDO O CLIENTE RECLAMA -->
+        <div class="alert-box" id="storeAlertBox" style="display: block;">
+          <div class="alert-header">
+            <span>🚨 ALERTA DO ROBÔ: CLIENTE QUESTIONA ATRASO</span>
+          </div>
+          <div class="alert-desc" id="storeAlertDesc">
+            <strong>Cliente:</strong> Esaú Monteiro • <strong>Pedido:</strong> #8492 (2x Pizza Calabresa + Guaraná)<br>
+            <strong>Status Atual:</strong> Na cozinha há 28 minutos.<br>
+            <em>O robô está aguardando você clicar para responder o cliente no WhatsApp:</em>
+          </div>
+
+          <div class="store-actions-row">
+            <button class="store-btn store-btn-success" onclick="replyAsStore('DISPATCHED')">
+              🛵 Já Saiu com o Motoboy!
+            </button>
+            <button class="store-btn store-btn-warning" onclick="replyAsStore('IN_OVEN')">
+              ⏳ Em Preparo (Sai em 10 min)
+            </button>
+            <button class="store-btn store-btn-primary" onclick="replyAsStore('CALLING_CUSTOMER')">
+              📞 Ligando para o Cliente
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DE TICKETS RESOLVIDOS -->
+      <div class="dash-card">
+        <div class="dash-header">
+          <h3 class="dash-title">📋 Chamados Recentes de Suporte (Barbalha)</h3>
+          <button class="chip-btn" onclick="loadTickets()">🔄 Atualizar</button>
+        </div>
+
+        <table class="tickets-table">
+          <thead>
+            <tr>
+              <th>Pedido</th>
+              <th>Cliente</th>
+              <th>Loja</th>
+              <th>Problema</th>
+              <th>Status do Bot</th>
+            </tr>
+          </thead>
+          <tbody id="ticketsBody">
+            <tr>
+              <td><strong>#8492</strong></td>
+              <td>Esaú Monteiro</td>
+              <td>Pizzaria Ellen</td>
+              <td><span style="color: #EF4444; font-weight: bold;">Pedido Atrasado</span></td>
+              <td><span class="badge-live" style="background:#FEF3C7; color:#B45309;">Aguardando Loja</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    const customerPhone = '5588988892782';
+    const customerName = 'Esaú Monteiro';
+    let currentTicketId = 'tkt_8492';
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage('user', text);
+      input.value = '';
+
+      try {
+        const res = await fetch('/api/bot/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: customerPhone, text, customerName })
+        });
+        const data = await res.json();
+        if (data.reply) {
+          setTimeout(() => {
+            appendMessage('bot', data.reply);
+          }, 400);
+        }
+
+        // Se o robô disparou alerta para a loja
+        if (data.actions && data.actions.includes('STORE_ALERT_SENT')) {
+          document.getElementById('storeAlertBox').style.display = 'block';
+        }
+      } catch (err) {
+        appendMessage('bot', '⚠️ Erro ao conectar com o servidor do Zapt Bot.');
+      }
+    }
+
+    function sendQuick(opt) {
+      document.getElementById('chatInput').value = opt;
+      sendMessage();
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') sendMessage();
+    }
+
+    function appendMessage(sender, text) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = `msg msg-${sender}`;
+      div.innerHTML = text.replace(/\n/g, '<br>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'msg-time';
+      const now = new Date();
+      timeDiv.textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+      div.appendChild(timeDiv);
+
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function replyAsStore(responseCode) {
+      try {
+        const res = await fetch('/api/bot/store-response', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId: currentTicketId, responseCode })
+        });
+        const data = await res.json();
+
+        // O robô responde imediatamente no chat do cliente!
+        if (data.customerMessage) {
+          appendMessage('bot', data.customerMessage);
+        }
+
+        // Atualiza alerta da loja
+        document.getElementById('storeAlertBox').style.background = '#ECFDF5';
+        document.getElementById('storeAlertBox').style.borderColor = '#10B981';
+        document.getElementById('storeAlertBox').innerHTML = `
+          <div style="color: #065F46; font-weight: bold; font-size: 15px; margin-bottom: 6px;">
+            ✅ RESPOSTA ENVIADA AO CLIENTE VIA WHATSAPP COM SUCESSO!
+          </div>
+          <div style="font-size: 13px; color: #047857;">
+            O cliente recebeu a informação no celular e o chamado foi finalizado sem atrito.
+          </div>
+        `;
+      } catch (err) {
+        alert('Erro ao responder como loja: ' + err.message);
+      }
+    }
+
+    async function loadTickets() {
+      try {
+        const res = await fetch('/api/bot/tickets');
+        const data = await res.json();
+        const tbody = document.getElementById('ticketsBody');
+        if (data.tickets && data.tickets.length > 0) {
+          tbody.innerHTML = data.tickets.map(t => `
+            <tr>
+              <td><strong>${t.orderCode}</strong></td>
+              <td>${t.customerName}</td>
+              <td>${t.storeName}</td>
+              <td><span style="color: #EF4444; font-weight: bold;">${t.issueCategory}</span></td>
+              <td><span class="badge-live">${t.status}</span></td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>
