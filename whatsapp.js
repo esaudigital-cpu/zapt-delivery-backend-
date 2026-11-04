@@ -81,15 +81,16 @@ async function startWhatsApp() {
         currentQrRaw = null;
 
         if (statusCode === DisconnectReason.loggedOut) {
-          console.log('🔒 [WHATSAPP] Desconectado da sessão (Logout). Limpando credenciais antigas...');
+          console.log('🔒 [WHATSAPP] Desconectado da sessão (Logout). Limpando credenciais antigas e gerando novo QR Code...');
           try {
             fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
           } catch (e) {}
-        }
-
-        if (shouldReconnect) {
+          setTimeout(() => {
+            startWhatsApp();
+          }, 1500);
+        } else if (shouldReconnect) {
           reconnectAttempts++;
-          const delay = Math.min(reconnectAttempts * 3000, 15000);
+          const delay = Math.min(reconnectAttempts * 2000, 10000);
           console.log(`⏳ [WHATSAPP] Tentando reconectar em ${delay / 1000}s... (Tentativa ${reconnectAttempts})`);
           setTimeout(() => {
             startWhatsApp();
@@ -223,8 +224,27 @@ async function disconnectWhatsApp() {
     fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
   } catch (e) {}
 
-  console.log('🔌 [WHATSAPP] Sessão desconectada e limpa.');
+  console.log('🔌 [WHATSAPP] Sessão desconectada e limpa. Iniciando novo QR Code...');
+  setTimeout(() => {
+    startWhatsApp();
+  }, 1000);
   return { success: true };
+}
+
+/**
+ * Forçar reinicialização do Socket para gerar novo QR Code
+ */
+async function restartWhatsApp() {
+  try {
+    if (sock) {
+      sock.end();
+    }
+  } catch (e) {}
+  connectionStatus = 'DISCONNECTED';
+  currentQrCodeDataUrl = null;
+  currentQrRaw = null;
+  reconnectAttempts = 0;
+  return await startWhatsApp();
 }
 
 /**
@@ -245,5 +265,6 @@ module.exports = {
   startWhatsApp,
   sendWhatsAppMessage,
   disconnectWhatsApp,
+  restartWhatsApp,
   getStatus,
 };

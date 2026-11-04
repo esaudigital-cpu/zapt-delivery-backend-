@@ -446,6 +446,9 @@
           <div id="qrLoading" class="qr-loading">
             <div class="spinner"></div>
             <span>Gerando QR Code seguro...</span>
+            <button onclick="requestNewQr()" class="btn btn-primary" style="margin-top: 15px; padding: 10px 18px; font-size: 0.85rem; width: auto;">
+              🔄 Gerar Novo QR Code
+            </button>
           </div>
           <img id="qrImage" src="" alt="QR Code WhatsApp" style="display: none;" />
         </div>
@@ -519,6 +522,19 @@
   <script>
     let pollInterval = null;
 
+    async function requestNewQr() {
+      try {
+        const qrLoading = document.getElementById('qrLoading');
+        qrLoading.innerHTML = '<div class="spinner"></div><span>Solicitando novo QR Code...</span>';
+        await fetch('/api/whatsapp/restart');
+        setTimeout(checkStatus, 1500);
+      } catch (e) {
+        console.error('Erro ao reiniciar WhatsApp:', e);
+      }
+    }
+
+    let disconnectedCount = 0;
+
     async function checkStatus() {
       try {
         const res = await fetch('/api/whatsapp/status');
@@ -533,12 +549,14 @@
         const connectedPhoneDisplay = document.getElementById('connectedPhoneDisplay');
 
         if (data.isConnected) {
+          disconnectedCount = 0;
           badge.className = 'status-badge connected';
           text.textContent = '🟢 100% Conectado';
           qrSection.style.display = 'none';
           connectedSection.style.display = 'block';
           connectedPhoneDisplay.textContent = data.phone || '(88) 98889-2782';
         } else if (data.status === 'WAITING_QR' && data.qrCodeDataUrl) {
+          disconnectedCount = 0;
           badge.className = 'status-badge waiting';
           text.textContent = '🟡 Aguardando Leitura';
           qrSection.style.display = 'block';
@@ -547,12 +565,18 @@
           qrImage.style.display = 'block';
           qrImage.src = data.qrCodeDataUrl;
         } else {
+          disconnectedCount++;
           badge.className = 'status-badge';
           text.textContent = '🔴 Desconectado';
           qrSection.style.display = 'block';
           connectedSection.style.display = 'none';
           qrLoading.style.display = 'flex';
           qrImage.style.display = 'none';
+
+          // Auto restart if disconnected for more than 2 polls
+          if (disconnectedCount === 2) {
+            fetch('/api/whatsapp/restart').catch(() => {});
+          }
         }
 
         // Renderizar logs

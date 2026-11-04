@@ -1343,6 +1343,11 @@ app.post('/api/whatsapp/disconnect', async (req, res) => {
   res.json(result);
 });
 
+app.all('/api/whatsapp/restart', async (req, res) => {
+  await whatsapp.restartWhatsApp();
+  res.json({ success: true, message: 'Reiniciando conexão com WhatsApp e gerando novo QR Code...' });
+});
+
 // Inicializar Servidor
 app.listen(PORT, async () => {
   console.log(`=================================================`);
