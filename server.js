@@ -128,6 +128,9 @@ let stores = [
   { id: 'store_3', name: 'Filipinho Lanches', category: 'Hambúrgueres & Pasteis', address: 'Santo Antônio, Barbalha', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
   { id: 'store_4', name: 'Farmácia Gentil', category: 'Medicamentos & Cuidados', address: 'Centro, Barbalha', phone: '5588988892782', commissionRate: 0.08, isOpen: true },
   { id: 'store_5', name: 'Drogaria São João', category: 'Farmácia & Perfumaria', address: 'Cirolândia, Barbalha', phone: '5588988892782', commissionRate: 0.08, isOpen: true },
+  { id: 'store_6', name: 'Express Moto-Frete Barbalha', category: 'Leva e Traz • Encomendas', address: 'Barbalha e Região', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
+  { id: 'store_7', name: 'Open Beach Açaí & Sorvetes', category: 'Açaí na Tigela • Barcas', address: 'Av. Cel. João Coelho, 142 - Centro', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
+  { id: 'store_8', name: 'Joel Burguer Artesanal', category: 'Smash Burgers & Batatas', address: 'Rua Miguel de Freitas Andrade, 176 - Cirolândia', phone: '5588988892782', commissionRate: 0.10, isOpen: true },
 ];
 
 // Estado dos Pedidos
