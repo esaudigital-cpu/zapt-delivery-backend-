@@ -204,7 +204,7 @@ Pode relatar com suas palavras que irei analisar imediatamente para te ajudar! �
     if (lowerText.includes('cupom') || lowerText.includes('desconto')) {
       botResponse = 
 `🎟️ *Cupons de Desconto Zapt Delivery:*
-Você pode usar o cupom *BEMVINDO10* na sua primeira compra para ganhar 10% de desconto, ou *BARBALHA5* para R$ 5,00 OFF em compras acima de R$ 30!
+Você pode usar o cupom *BEMVINDO10* na sua primeira compra para ganhar 10% de desconto, ou *ZAPT5* para R$ 5,00 OFF em compras acima de R$ 30!
 Basta digitar o cupom na sacola antes de confirmar o pedido.`;
       return formatReply(session, botResponse);
     }
@@ -220,7 +220,7 @@ Estou notificando a gerência da loja *${session.storeName || 'parceira'}* para 
 
     if (lowerText.includes('trabalhar') || lowerText.includes('motoboy') || lowerText.includes('entregador') || lowerText.includes('cadastrar loja')) {
       botResponse = 
-`🤝 *Parcerias Zapt Delivery Barbalha:*
+`🤝 *Parcerias Zapt Delivery:*
 • *Quer ser motoboy parceiro?* Envie foto da sua CNH e placa da moto por aqui.
 • *Quer cadastrar seu restaurante/loja?* Nossa equipe cadastra seu cardápio com 30 dias grátis de teste!
 Um Especialista de Atendimento entrará em contato por este número em instantes!`;

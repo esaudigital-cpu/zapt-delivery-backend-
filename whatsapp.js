@@ -107,7 +107,7 @@ async function startWhatsApp() {
         console.log(`=================================================`);
         console.log(`✅ [WHATSAPP] CONECTADO COM SUCESSO!`);
         console.log(`📱 Número Conectado: ${connectedPhone}`);
-        console.log(`⚡ Robô Zapt Delivery ativo para atender em Barbalha!`);
+        console.log(`⚡ Robô Zapt Delivery ativo para atendimento automático!`);
         console.log(`=================================================`);
       }
     });
