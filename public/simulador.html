@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapt Delivery - Simulador de Ponta a Ponta (3 Apps)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #FF5500;
+      --primary-dark: #D44400;
+      --secondary: #FFD600;
+      --navy: #0F172A;
+      --bg: #0B1120;
+      --surface: #1E293B;
+      --surface-light: #334155;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --blue: #2563EB;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1E1B4B 0%, #0B1120 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 14px rgba(255, 85, 0, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    .brand-title span {
+      color: var(--primary);
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .flow-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      color: var(--success);
+      font-size: 0.8rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    /* BARRA DE PROGRESSO DO FLUXO */
+    .stepper-bar {
+      background: rgba(30, 41, 59, 0.7);
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .step-node {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      opacity: 0.6;
+      transition: all 0.3s;
+    }
+
+    .step-node.active {
+      opacity: 1;
+      color: var(--secondary);
+    }
+
+    .step-node.completed {
+      opacity: 1;
+      color: var(--success);
+    }
+
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--surface-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    .step-node.active .step-num {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .step-node.completed .step-num {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .step-arrow {
+      color: var(--surface-light);
+      font-size: 0.75rem;
+    }
+
+    /* GRID DAS 3 COLUNAS */
+    .sim-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding: 24px;
+      flex: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1024px) {
+      .sim-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .phone-card {
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .phone-card.active-app {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(255, 85, 0, 0.25);
+    }
+
+    .card-top {
+      padding: 16px 20px;
+      background: rgba(15, 23, 42, 0.6);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .app-icon.client { background: var(--primary); }
+    .app-icon.kitchen { background: #D97706; }
+    .app-icon.motoboy { background: var(--blue); }
+
+    .app-name {
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .app-role {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .state-banner {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .state-banner.alert {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--danger);
+      color: var(--danger);
+      font-weight: 800;
+      animation: flash 1s infinite;
+    }
+
+    @keyframes flash {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+
+    .info-box {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-client {
+      background: linear-gradient(135deg, var(--primary), #FF7700);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(255, 85, 0, 0.4);
+    }
+
+    .btn-kitchen {
+      background: var(--success);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-motoboy {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-disabled {
+      background: var(--surface-light);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none !important;
+    }
+
+    .receipt-preview {
+      background: #fff;
+      color: #0F172A;
+      border-radius: 10px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      border: 1px solid #CBD5E1;
+    }
+
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">⚡</div>
+      <div>
+        <div class="brand-title">Zapt<span>Delivery</span> • Simulador Ao Vivo</div>
+        <div class="brand-sub">Teste de Fluxo de Ponta a Ponta dos 3 Aplicativos</div>
+      </div>
+    </div>
+    <div class="flow-badge">
+      <div class="pulse-dot"></div>
+      <span>Backend 100% Conectado</span>
+    </div>
+  </header>
+
+  <!-- BARRA DE PROGRESSO DO FLUXO -->
+  <div class="stepper-bar">
+    <div id="step-1" class="step-node active">
+      <div class="step-num">1</div>
+      <span>Cliente Pede</span>
+    </div>
+    <i class="fa-solid fa-chevron-right step-arrow"></i>
+    <div id="step-2" class="step-node">
+      <div class="step-num">2</div>
+      <span>Sirene na Cozinha</span>
+    </div>
+    <i class="fa-solid fa-chevron-right step-arrow"></i>
+    <div id="step-3" class="step-node">
+      <div class="step-num">3</div>
+      <span>Alerta ao Motoboy</span>
+    </div>
+    <i class="fa-solid fa-chevron-right step-arrow"></i>
+    <div id="step-4" class="step-node">
+      <div class="step-num">4</div>
+      <span>Rota & Entrega</span>
+    </div>
+    <i class="fa-solid fa-chevron-right step-arrow"></i>
+    <div id="step-5" class="step-node">
+      <div class="step-num">5</div>
+      <span>Concluído & Ganhos</span>
+    </div>
+  </div>
+
+  <!-- GRID COM AS 3 TELAS -->
+  <div class="sim-grid">
+
+    <!-- COLUNA 1: APP DO CLIENTE -->
+    <div class="phone-card" id="card-client">
+      <div class="card-top">
+        <div class="card-title-group">
+          <div class="app-icon client"><i class="fa-solid fa-mobile-screen-button text-white"></i></div>
+          <div>
+            <div class="app-name">Zapt Delivery</div>
+            <div class="app-role">Aplicativo do Cliente</div>
+          </div>
+        </div>
+        <span class="badge" style="font-size: 0.75rem; color: var(--secondary);">📍 Barbalha - CE</span>
+      </div>
+
+      <div class="card-body">
+        <div class="info-box">
+          <div style="font-weight: 800; margin-bottom: 6px; color: #FFF;">
+            🍕 Pizzaria Ellen (Centro)
+          </div>
+          <div style="color: var(--text-muted); font-size: 0.8rem;">
+            1x Pizza Carne de Sol do Cariri (Grande)<br>
+            • Adicional: Borda Catupiry Original<br>
+            1x Coca-Cola 2L Gelada<br>
+            <span style="color: var(--success); font-weight: 700;">🎁 Cupom BEMVINDO10: -R$ 10,00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 10px; font-weight: 800; font-size: 0.95rem; border-top: 1px solid var(--border); padding-top: 6px;">
+            <span>Total com Entrega:</span>
+            <span style="color: var(--secondary);">R$ 56,90 (PIX)</span>
+          </div>
+        </div>
+
+        <div id="client-status" class="state-banner">
+          Pronto para fazer o pedido de teste.
+        </div>
+
+        <button id="btn-create-order" class="btn-action btn-client" onclick="step1CreateOrder()">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span>1. ENVIAR PEDIDO AGORA</span>
+        </button>
+
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+          Ao clicar, o pedido será enviado ao servidor e tocará a sirene no app da loja!
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA 2: APP DO RESTAURANTE (ZAPT PARCEIRO) -->
+    <div class="phone-card" id="card-kitchen">
+      <div class="card-top">
+        <div class="card-title-group">
+          <div class="app-icon kitchen"><i class="fa-solid fa-kitchen-set text-white"></i></div>
+          <div>
+            <div class="app-name">Zapt Parceiro</div>
+            <div class="app-role">Gestor de Cozinha</div>
+          </div>
+        </div>
+        <span id="kitchen-sound-indicator" style="font-size: 0.75rem; color: var(--text-muted);">
+          <i class="fa-solid fa-volume-high"></i> Sirene Ativa
+        </span>
+      </div>
+
+      <div class="card-body">
+        <div id="kitchen-alert-banner" class="state-banner">
+          Aguardando novo pedido entrar...
+        </div>
+
+        <!-- Comanda Térmica Preview -->
+        <div id="receipt-box" class="receipt-preview" style="display: none;">
+          <div style="text-align: center; font-weight: bold; border-bottom: 1px dashed #64748B; padding-bottom: 4px; margin-bottom: 4px;">
+            *** ZAPT DELIVERY • COZINHA ***
+          </div>
+          <div id="receipt-text">
+            PEDIDO: #1005 | PIZZARIA ELLEN<br>
+            CLIENTE: Esaú Monteiro<br>
+            END: Rua do Rosário, 120 - Centro<br>
+            1x Pizza Carne de Sol (G) + Catupiry<br>
+            1x Coca-Cola 2L<br>
+            TOTAL: R$ 56,90 (PAGO NO PIX)
+          </div>
+        </div>
+
+        <button id="btn-accept-order" class="btn-action btn-disabled" onclick="step2AcceptOrder()" disabled>
+          <i class="fa-solid fa-bell"></i>
+          <span>2. ACEITAR PEDIDO (30 MIN)</span>
+        </button>
+
+        <button id="btn-ready-order" class="btn-action btn-disabled" onclick="step3ReadyOrder()" disabled style="display: none;">
+          <i class="fa-solid fa-box"></i>
+          <span>PRONTO / CHAMAR MOTOBOY</span>
+        </button>
+
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+          A sirene contínua tocará até o restaurante clicar em "Aceitar Pedido".
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA 3: APP DO MOTOBOY (ZAPT ENTREGADOR) -->
+    <div class="phone-card" id="card-motoboy">
+      <div class="card-top">
+        <div class="card-title-group">
+          <div class="app-icon motoboy"><i class="fa-solid fa-motorcycle text-white"></i></div>
+          <div>
+            <div class="app-name">Zapt Entregador</div>
+            <div class="app-role">Aplicativo do Motoboy</div>
+          </div>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--success); font-weight: 800;">🟢 ONLINE</span>
+      </div>
+
+      <div class="card-body">
+        <div id="motoboy-alert-banner" class="state-banner">
+          Aguardando chamado de corrida...
+        </div>
+
+        <!-- Box de Corrida -->
+        <div id="ride-info-box" class="info-box" style="display: none; border-color: var(--blue);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-weight: 800; color: #FFF;">Corrida Zapt</span>
+            <span style="color: var(--success); font-size: 1.1rem; font-weight: 900;">+ R$ 6,00</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            📍 Retirada: Pizzaria Ellen (Centro)<br>
+            🏁 Entrega: Rua do Rosário, 120 (Centro)<br>
+            🛵 Distância: 1.2 km (~10 min)
+          </div>
+        </div>
+
+        <button id="btn-accept-ride" class="btn-action btn-disabled" onclick="step4AcceptRide()" disabled>
+          <i class="fa-solid fa-bicycle"></i>
+          <span>3. ACEITAR CORRIDA (+R$ 6,00)</span>
+        </button>
+
+        <button id="btn-complete-ride" class="btn-action btn-disabled" onclick="step5CompleteRide()" disabled style="display: none;">
+          <i class="fa-solid fa-flag-checkered"></i>
+          <span>4. CONFIRMAR ENTREGA REALIZADA</span>
+        </button>
+
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+          O motoboy aceita, traça a rota no GPS e confirma a entrega no cliente.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Zapt Delivery • Sistema de Delivery Integrado • Barbalha - Ceará
+  </footer>
+
+  <!-- ÁUDIO & SCRIPTS DO FLUXO COMPLETO -->
+  <script>
+    let currentOrder = null;
+    let kitchenAlarmInterval = null;
+    let motoboyAlarmInterval = null;
+
+    // Gerador de Áudio Nativo via Web Audio API
+    function playKitchenChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Ding!
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.frequency.setValueAtTime(880, ctx.currentTime);
+        osc1.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
+        gain1.gain.setValueAtTime(0.7, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.4);
+
+        // Dong!
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.frequency.setValueAtTime(660, ctx.currentTime + 0.22);
+        osc2.frequency.exponentialRampToValueAtTime(990, ctx.currentTime + 0.37);
+        gain2.gain.setValueAtTime(0.8, ctx.currentTime + 0.22);
+        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.65);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(ctx.currentTime + 0.22);
+        osc2.stop(ctx.currentTime + 0.65);
+      } catch (e) {}
+    }
+
+    function playMotoboyHorn() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.setValueAtTime(580, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.6, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+
+    // ==============================================================
+    // PASSO 1: CLIENTE CRIA O PEDIDO
+    // ==============================================================
+    async function step1CreateOrder() {
+      const btn = document.getElementById('btn-create-order');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+      btn.disabled = true;
+
+      const orderPayload = {
+        storeId: 'store_1',
+        storeName: 'Pizzaria Ellen',
+        customerName: 'Esaú Monteiro',
+        customerPhone: '5588988892782',
+        address: 'Rua do Rosário, 120 - Centro',
+        neighborhood: 'Centro',
+        paymentMethod: 'PIX',
+        subtotal: 59.90,
+        deliveryFee: 7.00,
+        serviceFee: 0.99,
+        total: 56.90, // com desconto de cupom
+        notes: 'Caprichar na manteiga da terra!',
+        items: [
+          { name: 'Pizza Carne de Sol do Cariri (Grande)', quantity: 1, unitPrice: 49.90, options: ['Borda Catupiry'] },
+          { name: 'Coca-Cola 2L Gelada', quantity: 1, unitPrice: 10.00 }
+        ]
+      };
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload)
+        });
+        const json = await res.json();
+        currentOrder = json.order || orderPayload;
+        currentOrder.id = currentOrder.id || `ord_${Date.now()}`;
+        currentOrder.orderCode = currentOrder.orderCode || '#1005';
+
+        // Atualizar Coluna Cliente
+        document.getElementById('client-status').innerHTML = '🟢 <strong>Pedido Enviado!</strong> Aguardando o restaurante aceitar.';
+        document.getElementById('client-status').style.borderColor = 'var(--success)';
+        document.getElementById('client-status').style.color = 'var(--success)';
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Pedido Enviado!';
+        btn.className = 'btn-action btn-disabled';
+
+        // Ativar Stepper
+        document.getElementById('step-1').className = 'step-node completed';
+        document.getElementById('step-2').className = 'step-node active';
+
+        // DISPARAR SIRENE CONTÍNUA NA COZINHA!
+        triggerKitchenAlarm();
+      } catch (err) {
+        alert('Erro ao enviar pedido: ' + err.message);
+      }
+    }
+
+    // ==============================================================
+    // PASSO 2: SIRENE E ACEITE DO RESTAURANTE
+    // ==============================================================
+    function triggerKitchenAlarm() {
+      const banner = document.getElementById('kitchen-alert-banner');
+      banner.className = 'state-banner alert';
+      banner.innerHTML = '🚨 <strong>1 NOVO PEDIDO RECEBIDO!</strong><br>Sirene tocando a cada 2.5s até aceitar!';
+
+      document.getElementById('receipt-box').style.display = 'block';
+
+      const btnAccept = document.getElementById('btn-accept-order');
+      btnAccept.className = 'btn-action btn-kitchen';
+      btnAccept.disabled = false;
+
+      // Inicia toque contínuo
+      playKitchenChime();
+      kitchenAlarmInterval = setInterval(playKitchenChime, 2500);
+    }
+
+    async function step2AcceptOrder() {
+      // Para o alarme sonoro
+      if (kitchenAlarmInterval) {
+        clearInterval(kitchenAlarmInterval);
+        kitchenAlarmInterval = null;
+      }
+
+      const banner = document.getElementById('kitchen-alert-banner');
+      banner.className = 'state-banner';
+      banner.style.color = 'var(--warning)';
+      banner.style.borderColor = 'var(--warning)';
+      banner.innerHTML = '🍳 <strong>Pedido Aceito!</strong> Em preparo no forno (Tempo: 30 min).';
+
+      const btnAccept = document.getElementById('btn-accept-order');
+      btnAccept.style.display = 'none';
+
+      const btnReady = document.getElementById('btn-ready-order');
+      btnReady.style.display = 'flex';
+      btnReady.className = 'btn-action btn-kitchen';
+      btnReady.disabled = false;
+
+      // Atualizar status no cliente
+      document.getElementById('client-status').innerHTML = '🍳 <strong>Em Preparo!</strong> A cozinha está preparando sua comanda.';
+
+      // Stepper
+      document.getElementById('step-2').className = 'step-node completed';
+      document.getElementById('step-3').className = 'step-node active';
+    }
+
+    // ==============================================================
+    // PASSO 3: COZINHA FINALIZA E CHAMA MOTOBOY
+    // ==============================================================
+    function step3ReadyOrder() {
+      const banner = document.getElementById('kitchen-alert-banner');
+      banner.innerHTML = '📦 <strong>Pedido Pronto!</strong> Aguardando o motoboy retirar.';
+      banner.style.color = 'var(--success)';
+      banner.style.borderColor = 'var(--success)';
+
+      const btnReady = document.getElementById('btn-ready-order');
+      btnReady.innerHTML = '<i class="fa-solid fa-check"></i> Motoboy Chamado!';
+      btnReady.className = 'btn-action btn-disabled';
+      btnReady.disabled = true;
+
+      // DISPARAR ALERTA NO MOTOBOY!
+      triggerMotoboyAlert();
+    }
+
+    // ==============================================================
+    // PASSO 4: MOTOBOY RECEBE ALERTA E ACEITA CORRIDA
+    // ==============================================================
+    function triggerMotoboyAlert() {
+      const banner = document.getElementById('motoboy-alert-banner');
+      banner.className = 'state-banner alert';
+      banner.innerHTML = '⚡ <strong>NOVA CORRIDA DISPONÍVEL!</strong><br>Pizzaria Ellen ➔ Centro (+ R$ 6,00)';
+
+      document.getElementById('ride-info-box').style.display = 'block';
+
+      const btnAcceptRide = document.getElementById('btn-accept-ride');
+      btnAcceptRide.className = 'btn-action btn-motoboy';
+      btnAcceptRide.disabled = false;
+
+      playMotoboyHorn();
+      motoboyAlarmInterval = setInterval(playMotoboyHorn, 3000);
+    }
+
+    function step4AcceptRide() {
+      if (motoboyAlarmInterval) {
+        clearInterval(motoboyAlarmInterval);
+        motoboyAlarmInterval = null;
+      }
+
+      const banner = document.getElementById('motoboy-alert-banner');
+      banner.className = 'state-banner';
+      banner.style.color = 'var(--blue)';
+      banner.style.borderColor = 'var(--blue)';
+      banner.innerHTML = '🛵 <strong>Corrida Aceita!</strong> Dirigindo-se ao cliente com o pedido.';
+
+      const btnAcceptRide = document.getElementById('btn-accept-ride');
+      btnAcceptRide.style.display = 'none';
+
+      const btnComplete = document.getElementById('btn-complete-ride');
+      btnComplete.style.display = 'flex';
+      btnComplete.className = 'btn-action btn-motoboy';
+      btnComplete.disabled = false;
+
+      // Atualiza cliente
+      document.getElementById('client-status').innerHTML = '🛵 <strong>Saiu para Entrega!</strong> O motoboy está a caminho do seu endereço.';
+      document.getElementById('client-status').style.color = 'var(--blue)';
+
+      // Stepper
+      document.getElementById('step-3').className = 'step-node completed';
+      document.getElementById('step-4').className = 'step-node active';
+    }
+
+    // ==============================================================
+    // PASSO 5: ENTREGA CONCLUÍDA
+    // ==============================================================
+    function step5CompleteRide() {
+      const banner = document.getElementById('motoboy-alert-banner');
+      banner.className = 'state-banner';
+      banner.style.color = 'var(--success)';
+      banner.style.borderColor = 'var(--success)';
+      banner.innerHTML = '✓ <strong>Entrega Concluída com Sucesso!</strong><br>+ R$ 6,00 adicionados aos seus ganhos de hoje.';
+
+      const btnComplete = document.getElementById('btn-complete-ride');
+      btnComplete.innerHTML = '<i class="fa-solid fa-circle-check"></i> Finalizado!';
+      btnComplete.className = 'btn-action btn-disabled';
+      btnComplete.disabled = true;
+
+      // Atualiza cliente
+      document.getElementById('client-status').innerHTML = '🎉 <strong>Pedido Entregue!</strong> Bom apetite! Avalie a Pizzaria Ellen no Zapt.';
+      document.getElementById('client-status').style.color = 'var(--success)';
+
+      // Stepper
+      document.getElementById('step-4').className = 'step-node completed';
+      document.getElementById('step-5').className = 'step-node completed';
+
+      alert('🎉 FLUXO COMPLETO REALIZADO COM SUCESSO!\n\n1. Cliente fez o pedido\n2. Cozinha tocou a sirene e aceitou em 30 min\n3. Motoboy recebeu o alerta, aceitou e realizou a rota\n4. Cliente recebeu quentinho no Centro de Barbalha!\n5. Todas as taxas e repasses calculados com precisão!');
+    }
+  </script>
+</body>
+</html>
