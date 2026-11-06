@@ -87,6 +87,31 @@
     </div>
   </header>
 
+  <!-- BANNER FLUTUANTE DE ALARME DE NOVO PEDIDO (SIRENE CONTÍNUA) -->
+  <div id="alarm-floating-banner" class="hidden bg-gradient-to-r from-red-600 via-orange-600 to-red-600 text-white px-6 py-3 flex items-center justify-between shadow-2xl animate-pulse sticky top-[65px] z-50 border-b border-red-400">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-white text-red-600 flex items-center justify-center font-black text-lg shadow-lg">
+        <i class="fa-solid fa-bell animate-bounce"></i>
+      </div>
+      <div>
+        <div class="font-extrabold text-sm md:text-base tracking-wide flex items-center gap-2">
+          <span>🚨 <span id="alarm-count-text">1</span> NOVO PEDIDO AGUARDANDO ACEITE DA COZINHA!</span>
+        </div>
+        <div class="text-xs text-red-100 font-medium">O alarme continuará apitando a cada 2.5s até o pedido ser aceito pela cozinha.</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="silenceCurrentAlarm()" class="px-3 py-2 rounded-lg bg-black/40 hover:bg-black/60 text-white text-xs font-bold border border-white/30 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-volume-xmark"></i>
+        <span>Silenciar Alarme</span>
+      </button>
+      <button onclick="acceptFirstPendingOrder()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-check"></i>
+        <span>Aceitar Pedido Agora</span>
+      </button>
+    </div>
+  </div>
+
   <!-- ============================================================== -->
   <!-- ABA 1: GESTOR DE PEDIDOS DA COZINHA (KANBAN) -->
   <!-- ============================================================== -->
@@ -489,27 +514,115 @@
     // ==========================================
     // RECURSOS DA COZINHA (PEDIDOS & KANBAN)
     // ==========================================
-    function playDeliveryChime() {
-      if (!soundEnabled) return;
+    // ==========================================
+    // SISTEMA DE ALARME SONORO CONTÍNUO (SIRENE DE PEDIDOS)
+    // ==========================================
+    let soundEnabled = true;
+    let alarmMode = 'CONTINUOUS'; // 'CONTINUOUS' | 'THREE_TIMES' | 'MUTED'
+    let activeAlarmInterval = null;
+    let isSilencedForCurrentOrders = false;
+    let originalTitle = document.title;
+    let titleBlinkInterval = null;
+    let chimePlayCount = 0;
+
+    function playTone(freqStart, freqEnd, startTime, duration, volume = 0.5) {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime + startTime);
+        osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + startTime + duration * 0.7);
 
-        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+        gain.gain.setValueAtTime(volume, audioCtx.currentTime + startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
 
         osc.connect(gain);
         gain.connect(audioCtx.destination);
 
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.8);
+        osc.start(audioCtx.currentTime + startTime);
+        osc.stop(audioCtx.currentTime + startTime + duration);
       } catch (e) {
-        console.log('Áudio bloqueado até interação.');
+        console.warn('AudioContext bloqueado até interação.');
+      }
+    }
+
+    function playChimePulse() {
+      if (!soundEnabled || isSilencedForCurrentOrders) return;
+      // Toque duplo Ding-Dong de restaurante (Forte e Nítido)
+      playTone(880, 1320, 0, 0.35, 0.7);   // Ding!
+      playTone(660, 990, 0.22, 0.45, 0.8); // Dong!
+      chimePlayCount++;
+
+      if (alarmMode === 'THREE_TIMES' && chimePlayCount >= 3) {
+        stopContinuousAlarm();
+      }
+    }
+
+    function startContinuousAlarm(pendingCount = 1) {
+      if (!soundEnabled || isSilencedForCurrentOrders) return;
+      if (activeAlarmInterval) return; // Já está apitando
+
+      chimePlayCount = 0;
+      playChimePulse(); // Toca na hora
+      activeAlarmInterval = setInterval(playChimePulse, 2600); // Repete a cada 2.6s
+
+      // Exibir Banner Flutuante de Alerta no Topo
+      const banner = document.getElementById('alarm-floating-banner');
+      if (banner) {
+        banner.classList.remove('hidden');
+        const countEl = document.getElementById('alarm-count-text');
+        if (countEl) countEl.innerText = pendingCount;
+      }
+
+      // Piscar título da aba do navegador
+      let blink = false;
+      if (!titleBlinkInterval) {
+        titleBlinkInterval = setInterval(() => {
+          document.title = blink ? `🚨 (${pendingCount}) NOVO PEDIDO ZAPT!` : `⚡ ACEITAR COMANDA AGORA!`;
+          blink = !blink;
+        }, 900);
+      }
+    }
+
+    function stopContinuousAlarm() {
+      if (activeAlarmInterval) {
+        clearInterval(activeAlarmInterval);
+        activeAlarmInterval = null;
+      }
+      if (titleBlinkInterval) {
+        clearInterval(titleBlinkInterval);
+        titleBlinkInterval = null;
+        document.title = originalTitle;
+      }
+      const banner = document.getElementById('alarm-floating-banner');
+      if (banner) {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function silenceCurrentAlarm() {
+      isSilencedForCurrentOrders = true;
+      stopContinuousAlarm();
+    }
+
+    function checkPendingOrdersAlarm() {
+      const pendingOrders = orders.filter(o => o.status === 'pending');
+      if (pendingOrders.length > 0) {
+        if (!isSilencedForCurrentOrders) {
+          startContinuousAlarm(pendingOrders.length);
+        }
+      } else {
+        isSilencedForCurrentOrders = false;
+        stopContinuousAlarm();
+      }
+    }
+
+    function acceptFirstPendingOrder() {
+      const firstPending = orders.find(o => o.status === 'pending');
+      if (firstPending) {
+        openAcceptModal(firstPending.id);
       }
     }
 
@@ -517,6 +630,11 @@
       soundEnabled = !soundEnabled;
       document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high text-blue-400' : 'fa-solid fa-volume-xmark text-slate-500';
       document.getElementById('sound-text').innerText = soundEnabled ? 'Alarme Ativo' : 'Alarme Mudo';
+      if (!soundEnabled) {
+        stopContinuousAlarm();
+      } else {
+        checkPendingOrdersAlarm();
+      }
     }
 
     let currentSelectedStore = 'ALL';
@@ -545,6 +663,7 @@
           orders = json.orders;
           renderKanban();
           updateMetrics();
+          checkPendingOrdersAlarm();
         }
       } catch (err) {
         console.error('Erro ao buscar pedidos:', err);
@@ -564,6 +683,7 @@
           if (idx !== -1) orders[idx] = json.order;
           renderKanban();
           updateMetrics();
+          checkPendingOrdersAlarm();
         }
       } catch (err) {
         alert('Erro ao atualizar status do pedido.');
@@ -756,12 +876,14 @@
           orders.unshift(data.order);
           renderKanban();
           updateMetrics();
-          playDeliveryChime();
+          isSilencedForCurrentOrders = false;
+          checkPendingOrdersAlarm();
         } else if (data.type === 'STATUS_CHANGE') {
           const idx = orders.findIndex(o => o.id === data.order.id || o.orderCode === data.order.orderCode);
           if (idx !== -1) orders[idx] = data.order;
           renderKanban();
           updateMetrics();
+          checkPendingOrdersAlarm();
         }
       };
 
